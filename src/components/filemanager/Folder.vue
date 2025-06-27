@@ -8,9 +8,9 @@ const props = defineProps({
 </script>
 
 <template>
-<div class="folder-item p-5 border-1 border-neutral-700 w-full h-fit place-items-center">
+<div class="folder-item rounded-2xl p-5 border-1 border-neutral-700 w-full h-full place-items-center">
   <i class="pi pi-folder " style="font-size: 40px"/>
-  <p>{{props.name}}</p>
+  <p class="wrap-anywhere">{{props.name}}</p>
 </div>
 </template>
 
