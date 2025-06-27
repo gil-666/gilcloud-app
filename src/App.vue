@@ -7,15 +7,49 @@ import {FileUpload} from "primevue";
 import {RouterView} from "vue-router";
 import {Suspense} from "vue";
 import UploadDialog from "./components/filemanager/UploadDialog.vue";
+import axios, {AxiosProgressEvent} from "axios";
+import router from "./router";
 const folders = ref("");
-const uploadVisible = ref(false);
+
 const name = ref("");
 const storageCount = ref({ //amount in MB
   "maxStorage": 15360,
   "currentUsage": 1000,
 });
 const progress = ref((storageCount.value.currentUsage/storageCount.value.maxStorage)*100);
+const uploadVisible = ref(false);
+const selectedFile = ref<File | null>(null);
+const uploadProgress = ref(0);
+const isUploading = ref(false);
+async function uploadFile(file:File) {
+  selectedFile.value = file;
+  if (!selectedFile.value) return;
 
+  const formData = new FormData();
+  formData.append('file', selectedFile.value);
+
+  isUploading.value = true;
+
+  try {
+    await axios.post('http://192.168.1.40:8080/upload', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+      onUploadProgress: (e: AxiosProgressEvent) => {
+        if (e.lengthComputable) {
+          uploadProgress.value = Math.round((e.loaded * 100) / e.total);
+        }
+      },
+    });
+    console.log(selectedFile.value.name);
+    console.log('Upload complete!');
+    location.reload()
+  } catch (error) {
+    console.error('Upload error:', error);
+  } finally {
+    isUploading.value = false;
+  }
+}
 </script>
 
 <template>
@@ -55,7 +89,7 @@ const progress = ref((storageCount.value.currentUsage/storageCount.value.maxStor
       </div>
     </div>
   </main>
-  <UploadDialog v-if="uploadVisible" @close="uploadVisible = false"></UploadDialog>
+  <UploadDialog v-if="uploadVisible" @close="uploadVisible = false" @file-selected="uploadFile"></UploadDialog>
 </template>
 
 <style scoped>

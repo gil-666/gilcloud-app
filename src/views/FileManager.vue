@@ -3,10 +3,11 @@ import Folder from "../components/filemanager/Folder.vue";
 import File from "../components/filemanager/File.vue";
 import {ref} from "vue";
 import {invoke} from "@tauri-apps/api/core";
+import UploadDialog from "../components/filemanager/UploadDialog.vue";
 
 const folders = ref();
 const files = ref();
-const dir = ref("/"); //current directory
+const dir = ref("../src-tauri/storage/user"); //current directory
 const homeDir = dir.value
 
 folders.value = await getFolders();
@@ -61,6 +62,9 @@ function formatDirText(text: string){
     return text;
   }
 }
+
+
+
 </script>
 
 <template>
