@@ -1,11 +1,14 @@
-<script setup lang="ts">
+<script setup lang="ts" xmlns="http://www.w3.org/1999/html">
 import {ref} from "vue";
 import Button from "./volt/Button.vue";
 import Divider from "./volt/Divider.vue";
 import ProgressBar from "./volt/ProgressBar.vue";
+import {FileUpload} from "primevue";
 import {RouterView} from "vue-router";
 import {Suspense} from "vue";
+import UploadDialog from "./components/filemanager/UploadDialog.vue";
 const folders = ref("");
+const uploadVisible = ref(false);
 const name = ref("");
 const storageCount = ref({ //amount in MB
   "maxStorage": 15360,
@@ -26,7 +29,8 @@ const progress = ref((storageCount.value.currentUsage/storageCount.value.maxStor
         <Divider layout="vertical"></Divider>
 
         <div class="logout-button absolute flex right-3 top-6">
-          <Button class="upload-btn pi pi-upload mr-5"> Upload</Button>
+          <input class="sr-only" type="file" name="bruh">
+          <Button @click="uploadVisible = !uploadVisible; console.log(uploadVisible)" class="upload-btn pi pi-upload mr-5"><p style="font-family: Inter,sans-serif">Upload</p></Button>
           <Button label="Log Out"></Button>
         </div>
       </div>
@@ -51,9 +55,11 @@ const progress = ref((storageCount.value.currentUsage/storageCount.value.maxStor
       </div>
     </div>
   </main>
+  <UploadDialog v-if="uploadVisible" @close="uploadVisible = false"></UploadDialog>
 </template>
 
 <style scoped>
+
 .logo {
   text-align: center;
 }

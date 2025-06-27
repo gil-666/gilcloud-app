@@ -6,7 +6,7 @@ import {invoke} from "@tauri-apps/api/core";
 
 const folders = ref();
 const files = ref();
-const dir = ref("/home/gil"); //current directory
+const dir = ref("/"); //current directory
 const homeDir = dir.value
 
 folders.value = await getFolders();
