@@ -11,20 +11,22 @@ const storageCount = ref({ //amount in MB
   "maxStorage": 15360,
   "currentUsage": 1000,
 });
-const dir = ref("./");
 const progress = ref((storageCount.value.currentUsage/storageCount.value.maxStorage)*100);
+
 </script>
 
 <template>
   <main>
     <div class="header bg-neutral-900 w-full fixed z-50">
       <div class="header-content p-4 flex">
-        <div class="logo w-42  place-items-center">
+        <div class="logo w-42 place-items-center">
           <p class="text-2xl font-bold h-fit">GilCloud</p>
           <p class="bg-green-900 w-fit">Cloud Services</p>
         </div>
         <Divider layout="vertical"></Divider>
+
         <div class="logout-button absolute flex right-3 top-6">
+          <Button class="upload-btn pi pi-upload mr-5"> Upload</Button>
           <Button label="Log Out"></Button>
         </div>
       </div>
@@ -60,8 +62,9 @@ Button:hover {
   background-color: grey;
   box-shadow: inset #f6f6f6 0 0 10px 2px;
 }
-.side-bar {
 
+.upload-btn{
+  background-color: #0d542b;
 }
 
 .btn-sidebar{

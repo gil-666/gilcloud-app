@@ -11,8 +11,9 @@ const props = defineProps({
 })
 
 function formatText(text: string){
-  if(text.length > 20){
-    return text.slice(0,17)+"..."
+  let limit = 30
+  if(text.length > limit){
+    return text.slice(0,limit-3)+"..."
   }else{
     return text;
   }
@@ -35,7 +36,7 @@ function calculateSize(size:number){ //size in bytes
     return (size/gb).toFixed(2)+" GB"
   }
   if(size > tb){
-    return (size/tb).toFixed(2)+" GB"
+    return (size/tb).toFixed(2)+" TB"
   }
 }
 </script>
@@ -43,7 +44,7 @@ function calculateSize(size:number){ //size in bytes
 <template>
   <div class="folder-item rounded-2xl p-2 border-1 border-neutral-700 w-full h-full place-items-center">
     <i class="pi pi-file mt-3" style="font-size: 50px"/>
-    <p class="wrap-anywhere font-light">{{formatText(props.name)}}</p>
+    <p class="wrap-anywhere font-light" :title="props.name" >{{formatText(props.name)}}</p>
     <p class="size font-extralight mt-2">{{calculateSize(props.size)}}</p>
   </div>
 </template>
