@@ -17,15 +17,31 @@ function formatText(text: string){
     return text;
   }
 }
-function calculateSize(size:number){
-  if(size > 1048576){
-    return (size/1048576).toFixed()+" MB"
+function calculateSize(size:number){ //size in bytes
+  const kb = 1024;
+  const mb = 1048576;
+  const gb = 1073741824;
+  const tb = 1099511627776;
+  if(size < kb ){
+    return (size).toFixed()+" B"
+  }
+  if(size < mb){
+    return (size/kb).toFixed()+" KB"
+  }
+  if(size < gb){
+    return (size/mb).toFixed(1)+" MB"
+  }
+  if(size < tb){
+    return (size/gb).toFixed(2)+" GB"
+  }
+  if(size > tb){
+    return (size/tb).toFixed(2)+" GB"
   }
 }
 </script>
 
 <template>
-  <div class="folder-item p-2 border-1 border-neutral-700 w-full h-full place-items-center">
+  <div class="folder-item rounded-2xl p-2 border-1 border-neutral-700 w-full h-full place-items-center">
     <i class="pi pi-file mt-3" style="font-size: 50px"/>
     <p class="wrap-anywhere font-light">{{formatText(props.name)}}</p>
     <p class="size font-extralight mt-2">{{calculateSize(props.size)}}</p>

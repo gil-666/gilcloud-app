@@ -1,21 +1,18 @@
 <script setup lang="ts">
 import {ref} from "vue";
-import {invoke} from "@tauri-apps/api/core";
 import Button from "./volt/Button.vue";
 import Divider from "./volt/Divider.vue";
 import ProgressBar from "./volt/ProgressBar.vue";
 import {RouterView} from "vue-router";
-const greetMsg = ref("");
+import {Suspense} from "vue";
+const folders = ref("");
 const name = ref("");
 const storageCount = ref({ //amount in MB
   "maxStorage": 15360,
   "currentUsage": 1000,
 });
+const dir = ref("./");
 const progress = ref((storageCount.value.currentUsage/storageCount.value.maxStorage)*100);
-async function greet() {
-  // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-  greetMsg.value = await invoke("greet", {name: name.value});
-}
 </script>
 
 <template>
@@ -44,7 +41,11 @@ async function greet() {
         </div>
       </div>
       <div class="font-bold flex-col w-full mt-22">
+        <Suspense>
+
+
         <RouterView />
+        </Suspense>
       </div>
     </div>
   </main>
@@ -53,14 +54,6 @@ async function greet() {
 <style scoped>
 .logo {
   text-align: center;
-}
-
-.logo.vite:hover {
-  filter: drop-shadow(0 0 2em #747bff);
-}
-
-.logo.vue:hover {
-  filter: drop-shadow(0 0 2em #249b73);
 }
 
 Button:hover {

@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "gilcloud-app",
+        "title": "GilCloud beta",
         "minWidth": 800,
         "minHeight": 623
       }
