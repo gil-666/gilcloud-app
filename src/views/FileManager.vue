@@ -1,14 +1,16 @@
 <script setup lang="ts">
 import Folder from "../components/filemanager/Folder.vue";
 import File from "../components/filemanager/File.vue";
-import {ref} from "vue";
+import {onMounted, ref} from "vue";
 import {invoke} from "@tauri-apps/api/core";
 import UploadDialog from "../components/filemanager/UploadDialog.vue";
-
+const props = defineProps({
+  "dir": String
+})
+const currentDir = ref(""+props.dir);
 const folders = ref();
 const files = ref();
-const dir = ref("../src-tauri/storage/user"); //current directory
-const homeDir = dir.value
+const homeDir = props.dir
 
 folders.value = await getFolders();
 files.value = await getFiles();
@@ -24,31 +26,31 @@ async function getFolders() {
   //   name,
   //   path: `${dir.value.endsWith('/') ? dir.value : dir.value + '/'}${name}`
   // }))
-  return await invoke("get_folders", {dir: dir.value})
+  return await invoke("get_folders", {dir: props.dir})
 }
 
 async function getFiles() {
-  const fil = await invoke("get_files", {dir: dir.value});
+  const fil = await invoke("get_files", {dir: props.dir});
   console.log(files);
   return fil
 }
 
 async function changeDir(newDir) {
-  navHistory.push(dir.value) //save current dir before changing
-  dir.value = newDir.replaceAll("\\", "/");
+  navHistory.push(currentDir.value) //save current dir before changing
+  currentDir.value = newDir.replaceAll("\\", "/");
   folders.value = await getFolders();
   files.value = await getFiles();
 }
 
 async function goBackDir() {
-  dir.value = navHistory[navHistory.length - 1].toString()
+  currentDir.value = navHistory[navHistory.length - 1].toString()
   navHistory.pop()
   folders.value = await getFolders();
   files.value = await getFiles();
 }
 
 async function resetDir(){
-  dir.value = homeDir;
+  currentDir.value = homeDir;
   navHistory = []
   folders.value = await getFolders();
   files.value = await getFiles();
@@ -77,7 +79,7 @@ function formatDirText(text: string){
            style="font-size: 20pt"></i>
       </div>
 
-      <h1 class="text-3xl pb-2 relative text-center" :title="dir">{{ formatDirText(dir) }}</h1>
+      <h1 class="text-3xl pb-2 relative text-center" :title="currentDir">{{ formatDirText(currentDir) }}</h1>
     </div>
     <div class="border-1 border-neutral-600 m-5 relative bottom-5 p-10 overflow-y-auto h-full max-h-11/12">
 

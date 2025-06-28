@@ -1,3 +1,6 @@
+mod db;
+use db::{register,login};
+
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 use std::fs as fsb;
 use std::io;
@@ -5,10 +8,10 @@ use std::path::Path;
 use sanitize_filename::sanitize;
 use serde_json::json;
 use actix_multipart::Multipart;
-use actix_web::{post, web, App, HttpServer, middleware, HttpResponse, Error};
+use actix_web::{post, delete, web, App, HttpServer, middleware, HttpResponse, Error, Responder};
+use std::path::PathBuf;
 use actix_cors::Cors;
 use futures_util::TryStreamExt as _;
-use std::io::Write;
 use tokio::fs;
 use tokio::io::AsyncWriteExt;
 
@@ -57,6 +60,25 @@ async fn upload(mut payload: Multipart) -> Result<HttpResponse, Error> {
     }
 
     Ok(HttpResponse::Ok().body("File uploaded successfully"))
+}
+#[delete("/delete")]
+async fn delete_file(query: web::Query<std::collections::HashMap<String, String>>) -> impl Responder {
+    let filename = query.get("filename");
+    if filename.is_none() {
+        return HttpResponse::BadRequest().body("Missing filename");
+    }
+
+    let path = format!("./storage/user/{}", sanitize_filename::sanitize(filename.unwrap()));
+    let filepath = PathBuf::from(path);
+
+    if filepath.exists() {
+        match tokio::fs::remove_file(filepath).await {
+            Ok(_) => HttpResponse::Ok().body("File deleted"),
+            Err(e) => HttpResponse::InternalServerError().body(format!("Error deleting file: {}", e)),
+        }
+    } else {
+        HttpResponse::NotFound().body("File not found")
+    }
 }
 #[tauri::command]
 fn greet(name: &str) -> String {
@@ -113,23 +135,33 @@ fn get_files(dir: String) -> Result<Vec<FileEntry>, String> {
 pub async fn run() {
     // Spawn actix server in background
     println!("running server...");
-    let server = tokio::spawn(async {
-        HttpServer::new(|| {
-            App::new()
-                .wrap(
-                    Cors::default()
-                        .allow_any_origin()
-                        .allow_any_method()
-                        .allow_any_header()
-                        .max_age(3600),
-                )
-                .wrap(middleware::Logger::default())
-                .service(upload)
-        })
-            .bind(("0.0.0.0", 8080))
-            .expect("Failed to bind Actix server")
-            .run()
-            .await
+    let db_pool = db::init_db().await;
+
+    let server = tokio::spawn({
+        let db_pool = db_pool.clone(); // clone the pool for the move
+        async move {
+            HttpServer::new(move || {
+                App::new()
+                    .app_data(web::Data::new(db_pool.clone())) // now valid
+                    .wrap(
+                        Cors::default()
+                            .allow_any_origin()
+                            .allow_any_method()
+                            .allow_any_header()
+                            .max_age(3600),
+                    )
+                    .wrap(middleware::Logger::default())
+                    .service(upload)
+                    .service(register)
+                    .service(login)
+                    .service(delete_file)
+            })
+                .bind(("0.0.0.0", 8080))
+                .expect("Failed to bind Actix server")
+                .run()
+                .await
+                .expect("Server run failed");
+        }
     });
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())

@@ -1,26 +1,38 @@
 <script setup lang="ts" xmlns="http://www.w3.org/1999/html">
-import {ref} from "vue";
+import {onMounted, ref} from "vue";
 import Button from "./volt/Button.vue";
 import Divider from "./volt/Divider.vue";
 import ProgressBar from "./volt/ProgressBar.vue";
-import {FileUpload} from "primevue";
+import Login from "./components/Login.vue";
 import {RouterView} from "vue-router";
 import {Suspense} from "vue";
 import UploadDialog from "./components/filemanager/UploadDialog.vue";
 import axios, {AxiosProgressEvent} from "axios";
-import router from "./router";
 const folders = ref("");
 
 const name = ref("");
 const storageCount = ref({ //amount in MB
-  "maxStorage": 15360,
-  "currentUsage": 1000,
+  "maxStorage": localStorage.getItem("storage_total")/1048576,
+  "currentUsage": localStorage.getItem("storage_used"/1048576),
 });
 const progress = ref((storageCount.value.currentUsage/storageCount.value.maxStorage)*100);
 const uploadVisible = ref(false);
 const selectedFile = ref<File | null>(null);
 const uploadProgress = ref(0);
 const isUploading = ref(false);
+const isLoggedIn = ref(false);
+onMounted(() => {
+  // if (localStorage.getItem("username")){
+  //   isLoggedIn.value = true;
+  // }
+  localStorage.clear() //forget logins for now
+})
+
+async function logOut(){
+  isLoggedIn.value = false;
+  localStorage.clear();
+  window.location.reload()
+}
 async function uploadFile(file:File) {
   selectedFile.value = file;
   if (!selectedFile.value) return;
@@ -53,6 +65,7 @@ async function uploadFile(file:File) {
 </script>
 
 <template>
+  <Login v-if="!isLoggedIn" @loginSuccess="isLoggedIn = true"></Login>
   <main>
     <div class="header bg-neutral-900 w-full fixed z-50">
       <div class="header-content p-4 flex">
@@ -65,7 +78,7 @@ async function uploadFile(file:File) {
         <div class="logout-button absolute flex right-3 top-6">
           <input class="sr-only" type="file" name="bruh">
           <Button @click="uploadVisible = !uploadVisible; console.log(uploadVisible)" class="upload-btn pi pi-upload mr-5"><p style="font-family: Inter,sans-serif">Upload</p></Button>
-          <Button label="Log Out"></Button>
+          <Button label="Log Out" @click="logOut"></Button>
         </div>
       </div>
     </div>
@@ -89,7 +102,9 @@ async function uploadFile(file:File) {
       </div>
     </div>
   </main>
+
   <UploadDialog v-if="uploadVisible" @close="uploadVisible = false" @file-selected="uploadFile"></UploadDialog>
+
 </template>
 
 <style scoped>
