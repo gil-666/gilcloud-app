@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import Folder from "../components/filemanager/Folder.vue";
 import File from "../components/filemanager/File.vue";
-import {computed, onMounted, ref, watch} from "vue";
-import { invoke } from "@tauri-apps/api/core";
+import {computed, ref, watch} from "vue";
 import { useAppStore } from "../stores/app.ts";
 import axios from "axios";
 

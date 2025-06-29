@@ -4,17 +4,13 @@ import Button from "./volt/Button.vue";
 import Divider from "./volt/Divider.vue";
 import ProgressBar from "./volt/ProgressBar.vue";
 import Login from "./components/Login.vue";
-import {RouterView, useRouter, RouterLink} from "vue-router";
-import {Suspense} from "vue";
+import {RouterView, RouterLink} from "vue-router";;
 import UploadDialog from "./components/filemanager/UploadDialog.vue";
 import axios, {AxiosProgressEvent} from "axios";
 import {useAppStore} from "./stores/app.ts";
 const window2 = window;
-const folders = ref("");
-const router = useRouter();
 const isLoggedIn = ref(false);
-const store = useAppStore();
-const name = ref("");
+const store = useAppStore();;
 const storageCount = computed(() => store.storageCount);
 const progress = computed(() => store.progress);
 const uploadVisible = ref(false);
@@ -73,7 +69,7 @@ async function uploadFile(file: File) {
       },
       onUploadProgress: (e: AxiosProgressEvent) => {
         if (e.lengthComputable) {
-          uploadProgress.value = Math.round((e.loaded * 100) / e.total);
+          uploadProgress.value = Math.round((e.loaded * 100) / e.total!);
         }
       },
     });
@@ -111,7 +107,7 @@ async function uploadFile(file: File) {
       <div class="side-bar bg-neutral-900 min-w-40 max-w-50 text-center w-full flex-col z-0">
         <div class="side-bar-inside mt-30 w-full ">
           <router-link to="/"><Button class="btn-sidebar w-full mb-5" label="Drive"></Button></router-link>
-          <router-link to="/vm"><Button class="btn-sidebar w-full" label="VMs"></Button></router-link>
+          <router-link to="/vm"><Button class="btn-sidebar w-full" label="miguel"></Button></router-link>
         </div>
         <div class="progress-bar mt-5 p-3 max-w-full bottom-10">
           <p class="storage-counter">{{ (storageCount.currentUsage / 1024).toFixed(2) }}GB of
