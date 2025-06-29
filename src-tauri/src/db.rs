@@ -1,7 +1,7 @@
 use std::{env, fs, io};
 use std::path::{Path, PathBuf};
 // src/db.rs
-use actix_web::{post, web, HttpResponse, Responder};
+use actix_web::{get,post, web, HttpResponse, Responder};
 use serde::{Deserialize, Serialize};
 use sqlx::{SqlitePool, Sqlite, Row};
 use sqlx::migrate::MigrateDatabase;
@@ -23,7 +23,56 @@ pub struct AuthData {
     pub username: String,
     pub password: String,
 }
+pub async fn get_user_storage_info(db: &SqlitePool, username: &str) -> Result<(i64, i64), io::Error> {
+    // Define path
+    let home_dir_path = format!("../data/storage/user/{}", username);
 
+    // Calculate used size
+    let used_result = task::spawn_blocking(move || calculate_directory_size(&home_dir_path))
+        .await
+        .unwrap_or(Err(io::Error::new(io::ErrorKind::Other, "Size calc failed")))?;
+
+    // Fetch total from DB
+    let row = sqlx::query("SELECT storage_total FROM users WHERE username = ?")
+        .bind(username)
+        .fetch_one(db)
+        .await
+        .map_err(|_| io::Error::new(io::ErrorKind::Other, "Failed to fetch total"))?;
+
+    let total: i64 = row.try_get("storage_total").unwrap_or(0);
+
+    Ok((total, used_result as i64))
+}
+#[get("/storage/{username}")]
+pub async fn storage_usage(
+    db: web::Data<SqlitePool>,
+    path: web::Path<String>,
+) -> impl Responder {
+    let username = path.into_inner();
+
+    match get_user_storage_info(db.get_ref(), &username).await {
+        Ok((total, used)) => {
+            // Update DB (optional, comment out if not needed here)
+            if let Err(e) = sqlx::query("UPDATE users SET storage_used = ? WHERE username = ?")
+                .bind(used)
+                .bind(&username)
+                .execute(db.get_ref())
+                .await
+            {
+                eprintln!("DB update failed: {}", e);
+            }
+
+            HttpResponse::Ok().json(serde_json::json!({
+                "maxStorage": total/1048576,
+                "currentUsage": used/1048576
+            }))
+        }
+        Err(e) => {
+            eprintln!("Error getting storage info: {}", e);
+            HttpResponse::InternalServerError().body("Could not retrieve storage data")
+        }
+    }
+}
 pub async fn register_user(pool: &SqlitePool, username: &str, password: &str) -> Result<()> {
     let salt = SaltString::generate(&mut OsRng);
     let argon2 = Argon2::default();

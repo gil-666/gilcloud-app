@@ -23,7 +23,7 @@ const handleSubmit = async () => {
   }
 
   try {
-    const url = "http://localhost:8080".concat(isLogin.value ? "/login" : "/register")
+    const url = `${window.API_URL}`.concat(isLogin.value ? "/login" : "/register")
     console.log(url)
     const response = await axios.post(url, {
       username: username.value,
@@ -36,11 +36,16 @@ const handleSubmit = async () => {
       // Save all response keys to localStorage
       const data = response.data
       for (const [key, value] of Object.entries(data)) {
-        localStorage.setItem(key, JSON.stringify(value))
+        localStorage.setItem(key, JSON.stringify(value).replace(/^"|"$/g, ''))
       }
       // Optionally redirect or update UI here
       console.log(response.data)
+      store.username = response.data.username
       store.setUserHomeDir(response.data.home_dir)
+      store.setStorageCount({
+        "maxStorage": response.data.storage_total/ 1048576,
+        "currentUsage": response.data.storage_used/ 1048576,
+      })
       console.log("home dir set: "+store.userHomeDir)
       alert("Login successful!")
 

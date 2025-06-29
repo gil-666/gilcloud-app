@@ -1,13 +1,21 @@
 <script setup lang="ts">
 import Folder from "../components/filemanager/Folder.vue";
 import File from "../components/filemanager/File.vue";
-import { onMounted, ref, watch } from "vue";
+import {computed, onMounted, ref, watch} from "vue";
 import { invoke } from "@tauri-apps/api/core";
 import { useAppStore } from "../stores/app.ts";
+import axios from "axios";
 
 const store = useAppStore();
 
-const currentDir = ref("");
+const currentDir = computed({
+  get() {
+    return store.currentDir.replace(/^"|"$/g, '');
+  },
+  set(value: string) {
+    store.setCurrentDir(value);
+  }
+});
 const folders = ref([]);
 const files = ref([]);
 let navHistory: Array<string> = [];
@@ -18,11 +26,13 @@ async function loadDirectory() {
   files.value = await getFiles();
 }
 async function getFolders() {
-  return await invoke("get_folders", { dir: currentDir.value });
+  const response = await axios.get(`${window.API_URL}/folders`, { params: { dir: currentDir.value } });
+  return response.data;
 }
 
 async function getFiles() {
-  return await invoke("get_files", { dir: currentDir.value });
+  const response = await axios.get(`${window.API_URL}/files`, { params: { dir: currentDir.value } });
+  return response.data;
 }
 
 // navigation
@@ -34,14 +44,15 @@ async function changeDir(newDir: string) {
 }
 
 async function goBackDir() {
-  currentDir.value = navHistory.pop() ?? currentDir.value;
-  await loadDirectory();
+  const prev = navHistory.pop();
+  if (prev) {
+    currentDir.value = prev;
+  }
 }
 
 async function resetDir() {
-  currentDir.value = "./" + store.userHomeDir;
   navHistory = [];
-  await loadDirectory();
+  currentDir.value = "./" + store.userHomeDir.replace(/^"|"$/g, '');
 }
 function formatDirText(text: string) {
   const limit = 50;
@@ -54,11 +65,9 @@ const isDirEmpty = () => {
 
 // Load after login
 watch(
-    () => store.userHomeDir,
-    async (homeDir) => {
-      if (homeDir) {
-        currentDir.value = homeDir;
-        store.setCurrentDir(currentDir.value);
+    currentDir,
+    async (newDir) => {
+      if (newDir) {
         await loadDirectory();
       }
     },
