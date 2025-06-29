@@ -29,7 +29,7 @@ struct FolderEntry{
 #[post("/upload")]
 async fn upload(mut payload: Multipart) -> Result<HttpResponse, Error> {
     // Ensure the storage directory exists
-    let storage_dir = "./storage/user";
+    let storage_dir = "../data/storage/user";
     if !Path::new(storage_dir).exists() {
         fs::create_dir_all(storage_dir).await?;
     }

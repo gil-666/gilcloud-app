@@ -8,12 +8,13 @@ import {RouterView} from "vue-router";
 import {Suspense} from "vue";
 import UploadDialog from "./components/filemanager/UploadDialog.vue";
 import axios, {AxiosProgressEvent} from "axios";
+import {useAppStore} from "./stores/app.ts";
 const folders = ref("");
 
 const name = ref("");
 const storageCount = ref({ //amount in MB
   "maxStorage": localStorage.getItem("storage_total")/1048576,
-  "currentUsage": localStorage.getItem("storage_used"/1048576),
+  "currentUsage": localStorage.getItem("storage_used")/1048576,
 });
 const progress = ref((storageCount.value.currentUsage/storageCount.value.maxStorage)*100);
 const uploadVisible = ref(false);
@@ -21,6 +22,7 @@ const selectedFile = ref<File | null>(null);
 const uploadProgress = ref(0);
 const isUploading = ref(false);
 const isLoggedIn = ref(false);
+const store = useAppStore();
 onMounted(() => {
   // if (localStorage.getItem("username")){
   //   isLoggedIn.value = true;
@@ -39,11 +41,11 @@ async function uploadFile(file:File) {
 
   const formData = new FormData();
   formData.append('file', selectedFile.value);
-
+  // formData.append('dir',store.currentDir);
   isUploading.value = true;
 
   try {
-    await axios.post('http://192.168.1.40:8080/upload', formData, {
+    await axios.post('http://localhost:8080/upload', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
@@ -55,7 +57,6 @@ async function uploadFile(file:File) {
     });
     console.log(selectedFile.value.name);
     console.log('Upload complete!');
-    location.reload()
   } catch (error) {
     console.error('Upload error:', error);
   } finally {
@@ -85,7 +86,7 @@ async function uploadFile(file:File) {
     <div class="flex relative h-screen">
       <div class="side-bar bg-neutral-900 min-w-40 max-w-50 text-center w-full flex-col z-0">
         <div class="side-bar-inside mt-30 w-full ">
-          <Button class="btn-sidebar w-full mb-5" label="File Manager"></Button>
+          <Button class="btn-sidebar w-full mb-5" label="Drive"></Button>
           <Button class="btn-sidebar w-full" label="VMs"></Button>
         </div>
         <div class="progress-bar mt-5 p-3 max-w-full bottom-10">

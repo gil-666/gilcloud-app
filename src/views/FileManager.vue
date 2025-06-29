@@ -1,72 +1,69 @@
 <script setup lang="ts">
 import Folder from "../components/filemanager/Folder.vue";
 import File from "../components/filemanager/File.vue";
-import {onMounted, ref} from "vue";
-import {invoke} from "@tauri-apps/api/core";
-import UploadDialog from "../components/filemanager/UploadDialog.vue";
-const props = defineProps({
-  "dir": String
-})
-const currentDir = ref(""+props.dir);
-const folders = ref();
-const files = ref();
-const homeDir = props.dir
+import { onMounted, ref, watch } from "vue";
+import { invoke } from "@tauri-apps/api/core";
+import { useAppStore } from "../stores/app.ts";
 
-folders.value = await getFolders();
-files.value = await getFiles();
-const isDirEmpty = () => {
-  console.log(folders.value.length)
-  return folders.value.length <= 0 && files.value.length <= 0;
+const store = useAppStore();
+
+const currentDir = ref("");
+const folders = ref([]);
+const files = ref([]);
+let navHistory: Array<string> = [];
+
+// Main directory loader
+async function loadDirectory() {
+  folders.value = await getFolders();
+  files.value = await getFiles();
 }
-let navHistory: Array<String> = []
 async function getFolders() {
-  // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-  // folders.value = folders.value.map((name:String, index:Number) => ({
-  //   id: index,
-  //   name,
-  //   path: `${dir.value.endsWith('/') ? dir.value : dir.value + '/'}${name}`
-  // }))
-  return await invoke("get_folders", {dir: props.dir})
+  return await invoke("get_folders", { dir: currentDir.value });
 }
 
 async function getFiles() {
-  const fil = await invoke("get_files", {dir: props.dir});
-  console.log(files);
-  return fil
+  return await invoke("get_files", { dir: currentDir.value });
 }
 
-async function changeDir(newDir) {
-  navHistory.push(currentDir.value) //save current dir before changing
+// navigation
+async function changeDir(newDir: string) {
+  navHistory.push(currentDir.value);
   currentDir.value = newDir.replaceAll("\\", "/");
-  folders.value = await getFolders();
-  files.value = await getFiles();
+  store.setCurrentDir(newDir);
+  await loadDirectory();
 }
 
 async function goBackDir() {
-  currentDir.value = navHistory[navHistory.length - 1].toString()
-  navHistory.pop()
-  folders.value = await getFolders();
-  files.value = await getFiles();
+  currentDir.value = navHistory.pop() ?? currentDir.value;
+  await loadDirectory();
 }
 
-async function resetDir(){
-  currentDir.value = homeDir;
-  navHistory = []
-  folders.value = await getFolders();
-  files.value = await getFiles();
+async function resetDir() {
+  currentDir.value = "./" + store.userHomeDir;
+  navHistory = [];
+  await loadDirectory();
+}
+function formatDirText(text: string) {
+  const limit = 50;
+  return text.length > limit ? "..." + text.slice(-limit) : text;
 }
 
-function formatDirText(text: string){
-  let limit = 50
-  if(text.length > limit){
-    return "..."+text.slice(text.length - limit, text.length)
-  }else{
-    return text;
-  }
-}
+const isDirEmpty = () => {
+  return folders.value.length === 0 && files.value.length === 0;
+};
 
-
-
+// Load after login
+watch(
+    () => store.userHomeDir,
+    async (homeDir) => {
+      if (homeDir) {
+        currentDir.value = homeDir;
+        store.setCurrentDir(currentDir.value);
+        await loadDirectory();
+      }
+    },
+    { immediate: true }
+);
 </script>
 
 <template>

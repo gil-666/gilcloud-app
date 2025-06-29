@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { ref } from "vue"
 import axios from "axios"
+import {useAppStore} from "../stores/app.ts";
 const emit = defineEmits(["loginSuccess"])
 // Reactive state
 const isLogin = ref(true)
 const username = ref("")
 const password = ref("")
 const errorMessage = ref("")
-
+const store = useAppStore();
 // Toggle form
 const toggleForm = () => {
   isLogin.value = !isLogin.value
@@ -38,7 +39,11 @@ const handleSubmit = async () => {
         localStorage.setItem(key, JSON.stringify(value))
       }
       // Optionally redirect or update UI here
+      console.log(response.data)
+      store.setUserHomeDir(response.data.home_dir)
+      console.log("home dir set: "+store.userHomeDir)
       alert("Login successful!")
+
       emit("loginSuccess")
     } else {
       alert("Registration successful! You can now log in.")

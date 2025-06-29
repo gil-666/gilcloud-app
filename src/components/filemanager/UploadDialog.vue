@@ -2,7 +2,7 @@
 import { defineEmits } from 'vue';
 const emit = defineEmits<{
   (event: 'close'): void;
-  (event: 'file-selected', file: File): void;
+  (event: 'file-selected', file: File, currentDir: String): void;
 }>();
 
 function onFileChange(event: Event) {

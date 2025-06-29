@@ -84,7 +84,7 @@ pub async fn login(
     match verify_user(&db, &data.username, &data.password).await {
         Ok(true) => {
             // Define home directory path
-            let home_dir_path = format!("storage/user/{}", data.username);
+            let home_dir_path = format!("../data/storage/user/{}", data.username);
             let home_dir_clone = home_dir_path.clone();
             // Ensure the directory exists
             if let Err(e) = fs::create_dir_all(&home_dir_path) {
