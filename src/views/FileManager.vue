@@ -107,7 +107,7 @@ async function deleteFile(fileName: string){
 }
 
 async function createFolder(foldername: string) {
-  await axios.post("http://localhost:8080/create_folder", {
+  await axios.post(`${window.API_URL}/create_folder`, {
     parent_dir: `${currentDir.value}`,
     folder_name: `${foldername}`
   });
