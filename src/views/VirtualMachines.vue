@@ -30,8 +30,7 @@ const random = Math.floor(Math.random() * imageSources.value.length);
   <main class="bg-neutral-800 w-full p-5 pt-2 text-center h-full overflow-hidden">
     <div class="block relative place-items-center w-full justify-center">
     <h1 class="text-3xl">NO WORKY</h1>
-      <Image
-          :src="imageSources[random].src"
+      <Image :src="imageSources[random].src" class="block"
           image-style="width: auto; max-height: 430px; object-fit: contain"
       />
       <Button class="mt-2" style="background-color: #0d542b;" @click="win.location.reload()">GOOD LUCK</Button>

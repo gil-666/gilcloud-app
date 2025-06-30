@@ -6,6 +6,7 @@ use std::fs as fsb;
 use std::io;
 use std::path::Path;
 use sanitize_filename::sanitize;
+use actix_files::NamedFile;
 use serde_json::json;
 use actix_multipart::Multipart;
 use actix_web::{get, post, delete, web, App, HttpServer, middleware, HttpResponse, Error, Responder};
@@ -25,6 +26,68 @@ struct FileEntry {
 struct FolderEntry{
     name: String,
     path: String,
+}
+#[derive(serde::Deserialize)]
+struct DownloadQuery {
+    path: String,
+}
+#[derive(serde::Deserialize)]
+struct CreateFolderRequest {
+    parent_dir: String,
+    folder_name: String,
+}
+#[get("/download/{username}/{filename}")]
+async fn download_file(
+    path: web::Path<(String, String)>,
+) -> Result<NamedFile, actix_web::Error> {
+    let (username, filename) = path.into_inner();
+    let base_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("..")
+        .join("data")
+        .join("storage")
+        .join("user");
+    let base_dir = base_dir.canonicalize()?;
+    let full_path = base_dir.join(&username).join(&filename).canonicalize()?;
+
+    if !full_path.starts_with(&base_dir) {
+        return Err(actix_web::error::ErrorForbidden("Access denied"));
+    }
+
+    Ok(NamedFile::open(full_path)?.set_content_disposition(
+        actix_web::http::header::ContentDisposition {
+            disposition: actix_web::http::header::DispositionType::Attachment,
+            parameters: vec![],
+        },
+    ))
+}
+#[delete("/delete/{username}/{filename}")]
+async fn delete_file(
+    path: web::Path<(String, String)>,
+) -> Result<HttpResponse, actix_web::Error> {
+    let (username, filename) = path.into_inner();
+
+    let base_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("..")
+        .join("data")
+        .join("storage")
+        .join("user");
+    let base_dir = base_dir.canonicalize()?;
+
+    let full_path = base_dir.join(&username).join(&filename).canonicalize()?;
+
+    // Security: Prevent directory traversal
+    if !full_path.starts_with(&base_dir) {
+        return Err(actix_web::error::ErrorForbidden("Access denied"));
+    }
+
+    // Delete file
+    match fs::remove_file(&full_path).await {
+        Ok(_) => Ok(HttpResponse::Ok().body("File deleted")),
+        Err(e) => {
+            eprintln!("Error deleting file: {}", e);
+            Err(actix_web::error::ErrorInternalServerError("Failed to delete file"))
+        }
+    }
 }
 #[post("/upload")]
 async fn upload(mut payload: Multipart) -> Result<HttpResponse, Error> {
@@ -82,25 +145,6 @@ async fn upload(mut payload: Multipart) -> Result<HttpResponse, Error> {
     Ok(HttpResponse::Ok().body("File uploaded successfully"))
 }
 
-#[delete("/delete")]
-async fn delete_file(query: web::Query<std::collections::HashMap<String, String>>) -> impl Responder {
-    let filename = query.get("filename");
-    if filename.is_none() {
-        return HttpResponse::BadRequest().body("Missing filename");
-    }
-
-    let path = format!("./storage/user/{}", sanitize_filename::sanitize(filename.unwrap()));
-    let filepath = PathBuf::from(path);
-
-    if filepath.exists() {
-        match tokio::fs::remove_file(filepath).await {
-            Ok(_) => HttpResponse::Ok().body("File deleted"),
-            Err(e) => HttpResponse::InternalServerError().body(format!("Error deleting file: {}", e)),
-        }
-    } else {
-        HttpResponse::NotFound().body("File not found")
-    }
-}
 #[tauri::command]
 fn greet(name: &str) -> String {
     format!("Hello, {}! You've been greeted from Rust!", name)
@@ -160,6 +204,34 @@ async fn files(web::Query(params): web::Query<std::collections::HashMap<String, 
 
     HttpResponse::Ok().json(entries)
 }
+#[post("/create_folder")]
+async fn create_folder(
+    data: web::Json<CreateFolderRequest>,
+) -> Result<HttpResponse, actix_web::Error> {
+    let base_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("..")
+        .join("data")
+        .join("storage")
+        .join("user");
+    let base_dir = base_dir.canonicalize()?; // Resolve symlinks, normalize
+
+    let target_dir = PathBuf::from(&data.parent_dir).join(&data.folder_name);
+    let target_dir = target_dir.canonicalize().unwrap_or(target_dir);
+
+    // Prevent path traversal
+//     if !target_dir.starts_with(&base_dir) {
+//         return Err(actix_web::error::ErrorForbidden("Access denied"));
+//     }
+
+    // Create the folder
+    match fs::create_dir_all(&target_dir).await {
+        Ok(_) => Ok(HttpResponse::Ok().body("Folder created")),
+        Err(e) => {
+            eprintln!("Error creating folder: {}", e);
+            Err(actix_web::error::ErrorInternalServerError("Failed to create folder"))
+        }
+    }
+}
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 #[tokio::main]
@@ -185,10 +257,12 @@ pub async fn run() {
                     .service(upload)
                     .service(register)
                     .service(login)
+                    .service(download_file)
                     .service(storage_usage)
                     .service(folders)
                     .service(files)
                     .service(delete_file)
+                    .service(create_folder)
             })
                 .bind(("0.0.0.0", 8080))
                 .expect("Failed to bind Actix server")

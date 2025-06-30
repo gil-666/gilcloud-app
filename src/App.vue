@@ -8,6 +8,7 @@ import {RouterView, RouterLink} from "vue-router";;
 import UploadDialog from "./components/filemanager/UploadDialog.vue";
 import axios, {AxiosProgressEvent} from "axios";
 import {useAppStore} from "./stores/app.ts";
+import Toast from './volt/Toast.vue';
 const window2 = window;
 const isLoggedIn = ref(false);
 const store = useAppStore();;
@@ -17,6 +18,8 @@ const uploadVisible = ref(false);
 const selectedFile = ref<File | null>(null);
 const uploadProgress = ref(0);
 const isUploading = ref(false);
+const isSidebarOpen = ref(false);
+const toggleSidebar = () => (isSidebarOpen.value = !isSidebarOpen.value);
 
 onMounted(() => {
   if (localStorage.getItem("username")) {
@@ -75,6 +78,7 @@ async function uploadFile(file: File) {
     });
     console.log(selectedFile.value.name);
     console.log('Upload complete!');
+    window.location.reload();
   } catch (error) {
     console.error('Upload error:', error);
   } finally {
@@ -86,17 +90,20 @@ async function uploadFile(file: File) {
 <template>
   <Login v-if="!isLoggedIn" @loginSuccess="isLoggedIn = true;setHomeDir"></Login>
   <main>
-    <div class="header bg-neutral-900 w-full fixed z-50">
-      <div class="header-content p-4 flex">
-        <div class="logo w-42 place-items-center">
+    <div class="header bg-neutral-900 w-full fixed z-90">
+      <div class="header-content place-items-center p-4 flex">
+        <Button @click="toggleSidebar" class="lg:hidden fixed z-30">
+          ☰
+        </Button>
+        <div class="logo w-35 place-items-center">
           <p class="text-2xl font-bold h-fit">GilCloud</p>
           <p class="bg-green-900 w-fit">Cloud Services</p>
         </div>
-        <Divider layout="vertical"></Divider>
+<!--        <Divider layout="vertical"></Divider>-->
 
         <div class="logout-button absolute flex right-3 top-6">
           <input class="sr-only" type="file" name="bruh">
-          <p class="content-center mr-4">Hola!, {{store.username}}</p>
+          <p class="content-center mr-4 sm:block hidden">Hola!, {{store.username}}</p>
           <Button @click="uploadVisible = !uploadVisible; console.log(uploadVisible)"
                   class="upload-btn pi pi-upload mr-5"><p style="font-family: Inter,sans-serif">Upload</p></Button>
           <Button label="Log Out" @click="logOut"></Button>
@@ -104,10 +111,13 @@ async function uploadFile(file: File) {
       </div>
     </div>
     <div class="flex relative h-screen">
-      <div class="side-bar bg-neutral-900 min-w-40 max-w-50 text-center w-full flex-col z-0">
+      <div
+          class="side-bar h-full fixed lg:relative z-20 bg-neutral-900 min-w-40 max-w-50 text-center w-full flex-col transition-transform duration-300"
+          :class="isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'"
+      >
         <div class="side-bar-inside mt-30 w-full ">
-          <router-link to="/"><Button class="btn-sidebar w-full mb-5" label="Drive"></Button></router-link>
-          <router-link to="/vm"><Button class="btn-sidebar w-full" label="miguel"></Button></router-link>
+          <router-link @click="toggleSidebar" to="/"><Button class="btn-sidebar w-full mb-5" label="Drive"></Button></router-link>
+          <router-link @click="toggleSidebar" to="/vm"><Button class="btn-sidebar w-full" label="miguel"></Button></router-link>
         </div>
         <div class="progress-bar mt-5 p-3 max-w-full bottom-10">
           <p class="storage-counter">{{ (storageCount.currentUsage / 1024).toFixed(2) }}GB of
@@ -116,9 +126,8 @@ async function uploadFile(file: File) {
         </div>
       </div>
       <div class="font-bold flex-col w-full mt-22">
+        <Toast/>
         <Suspense>
-
-
           <RouterView/>
         </Suspense>
       </div>

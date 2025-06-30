@@ -56,7 +56,7 @@ const handleSubmit = async () => {
     }
   } catch (error: any) {
     errorMessage.value =
-        error.response?.data?.message || "Something went wrong."
+        error.response?.data?.message || "Login incorrect."
   }
 }
 </script>

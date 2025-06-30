@@ -1,4 +1,5 @@
 <script setup lang="ts">
+
 const props = defineProps({
   name: {
     type: String,
@@ -9,6 +10,7 @@ const props = defineProps({
     required: true
   }
 })
+const emit = defineEmits(['delete'])
 
 function formatText(text: string){
   let limit = 30
@@ -43,9 +45,11 @@ function calculateSize(size:number){ //size in bytes
 
 <template>
   <div class="folder-item rounded-2xl p-2 border-1 border-neutral-700 w-full h-full place-items-center">
+    <i @click.stop="emit('delete')" class="sm:ml-14 delete-file pi pi-trash absolute ml-12 z-10" style="font-size: 20px"></i>
     <i class="pi pi-file mt-3" style="font-size: 50px"/>
     <p class="wrap-anywhere font-light" :title="props.name" >{{formatText(props.name)}}</p>
     <p class="size font-extralight mt-2">{{calculateSize(props.size)}}</p>
+    <p class="down-label hover:opacity-100 relative opacity-0 mt-0">download</p>
   </div>
 </template>
 
@@ -57,8 +61,20 @@ function calculateSize(size:number){ //size in bytes
   cursor: pointer;
   transition: background-color 0.5s ease;
 }
-.folder-item:hover {
+.folder-item:hover{
   background-color: grey;
   box-shadow: inset #f6f6f6 0 0 10px 2px;
+}
+.folder-item:hover .down-label{
+  opacity: 1;
+}
+.down-label{
+  transition: opacity 0.5s ease;
+}
+.delete-file{
+  transition: color 0.5s ease;
+}
+.delete-file:hover{
+  color: red;
 }
 </style>

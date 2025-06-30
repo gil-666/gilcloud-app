@@ -13,8 +13,10 @@
     "windows": [
       {
         "title": "GilCloud beta",
+        "width": 1024,
+        "height": 720,
         "minWidth": 800,
-        "minHeight": 623
+        "minHeight": 644
       }
     ],
     "security": {
