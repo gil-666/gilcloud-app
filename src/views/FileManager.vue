@@ -36,6 +36,7 @@ async function getFolders() {
 
 async function getFiles() {
   const response = await axios.get(`${window.API_URL}/files`, { params: { dir: currentDir.value } });
+  console.log(response.data);
   return response.data;
 }
 
@@ -59,8 +60,10 @@ async function resetDir() {
   currentDir.value = "./" + store.userHomeDir.replace(/^"|"$/g, '');
 }
 function formatDirText(text: string) {
-  const limit = 50;
-  return text.length > limit ? "..." + text.slice(-limit) : text;
+  const marker = `data/storage/user/`;
+  const normalized = text.replaceAll("\\", "/"); // normalize slashes
+  const index = normalized.indexOf(marker);
+  return text.slice(index + marker.length).replaceAll("\\", "/");
 }
 
 const isDirEmpty = () => {
@@ -70,10 +73,19 @@ async function updateStorageCount() {
   const response = await axios.get(`${window.API_URL}/storage/${localStorage.getItem('username')}`);
   store.setStorageCount(response.data);
 }
-async function downloadFile(fileName: string) {
+function extractRelativePath(fullPath: string, username: string): string {
+  const marker = `/user/${username}/`;
+  const normalized = fullPath.replaceAll("\\", "/"); // normalize slashes
+  const index = normalized.indexOf(marker);
+  if (index === -1) return ""; // username not found
+  return normalized.slice(index + marker.length);
+}
+async function downloadFile(filePath: string) {
   const username = localStorage.getItem("username");
-  console.log("Downloading file...");
-  window.open(`${window.API_URL}/download/${username}/${fileName}`);
+  if (!username) return;
+  const relativePath = extractRelativePath(filePath, username);
+  const encodedPath = encodeURIComponent(relativePath);
+  window.open(`${window.API_URL}/download/${username}/${encodedPath}`);
 }
 
 async function deleteFile(fileName: string){
@@ -138,7 +150,7 @@ watch(
 
       <div class="file-list gap-10 grid 2xl:grid-cols-8 lg:grid-cols-4 grid-cols-2 justify-items-center  ">
         <Folder class="" v-for="folder in folders" v-bind="folder" @click="changeDir(folder.path)"></Folder>
-        <File @click="downloadFile(file.name)" @delete="deleteFile(file.name)" v-for="file in files" v-bind="file"></File>
+        <File @click="downloadFile(file.path)" @delete="deleteFile(file.name)" v-for="file in files" v-bind="file"></File>
       </div>
 
     </div>

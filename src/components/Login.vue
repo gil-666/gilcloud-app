@@ -69,6 +69,7 @@ const handleSubmit = async () => {
       <div
           class="flex flex-col items-center justify-center bg-neutral-800 p-8 rounded-lg shadow-lg w-96"
       >
+        <h1 class="mb-2">Welcome to GilCloud</h1>
         <h2 class="text-3xl font-semibold text-white mb-6">
           {{ isLogin ? "Login" : "Register" }}
         </h2>

@@ -36,7 +36,7 @@ struct CreateFolderRequest {
     parent_dir: String,
     folder_name: String,
 }
-#[get("/download/{username}/{filename}")]
+#[get("/download/{username}/{filename:.*}")]
 async fn download_file(
     path: web::Path<(String, String)>,
 ) -> Result<NamedFile, actix_web::Error> {
