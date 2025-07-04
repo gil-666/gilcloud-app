@@ -88,14 +88,16 @@ async function downloadFile(filePath: string) {
   window.open(`${window.API_URL}/download/${username}/${encodedPath}`);
 }
 
-async function deleteFile(fileName: string){
+async function deleteFile(filePath: string){
   const username = localStorage.getItem("username");
   console.log("Deleting file...");
+  const relativePath = extractRelativePath(filePath, username);
+  const encodedPath = encodeURIComponent(relativePath);
   try {
-    await axios.delete(`${window.API_URL}/delete/${username}/${fileName}`);
+    await axios.delete(`${window.API_URL}/delete/${username}/${encodedPath}`);
     await loadDirectory()
     toast.add({
-      detail: `File ${fileName} was deleted successfully`,
+      detail: `File ${filePath} was deleted successfully`,
       summary: "File deleted",
       severity: "info",
       life: 3000,
@@ -148,7 +150,7 @@ watch(
 
       <div class="file-list gap-10 grid 2xl:grid-cols-8 lg:grid-cols-4 grid-cols-2 justify-items-center  ">
         <Folder class="" v-for="folder in folders" v-bind="folder" @click="changeDir(folder.path)"></Folder>
-        <File @click="downloadFile(file.path)" @delete="deleteFile(file.name)" v-for="file in files" v-bind="file"></File>
+        <File @click="downloadFile(file.path)" @delete="deleteFile(file.path)" v-for="file in files" v-bind="file"></File>
       </div>
 
     </div>
