@@ -9,7 +9,7 @@ use sanitize_filename::sanitize;
 use actix_files::NamedFile;
 use serde_json::json;
 use actix_multipart::Multipart;
-use actix_web::{get, post, delete, web, App, HttpServer, middleware, HttpResponse, Error, Responder};
+use actix_web::{get, post, delete, web, App, HttpServer, middleware, HttpResponse, Error, error, Responder};
 use std::path::PathBuf;
 use actix_cors::Cors;
 use futures_util::TryStreamExt as _;
@@ -81,12 +81,26 @@ async fn delete_file(
     }
 
     // Delete file
-    match fs::remove_file(&full_path).await {
-        Ok(_) => Ok(HttpResponse::Ok().body("File deleted")),
-        Err(e) => {
-            eprintln!("Error deleting file: {}", e);
-            Err(actix_web::error::ErrorInternalServerError("Failed to delete file"))
+    match fs::metadata(&full_path).await {
+        Ok(metadata) => {
+            println!("{}",&full_path.display());
+            if metadata.is_file() {
+                fs::remove_file(&full_path).await.map_err(|e| {
+                    eprintln!("Error deleting file: {}", e);
+                    error::ErrorInternalServerError("Failed to delete file")
+                })?;
+                Ok(HttpResponse::Ok().body("File deleted"))
+            } else if metadata.is_dir() {
+                fs::remove_dir_all(&full_path).await.map_err(|e| {
+                    eprintln!("Error deleting directory: {}", e);
+                    error::ErrorInternalServerError("Failed to delete directory")
+                })?;
+                Ok(HttpResponse::Ok().body("Directory deleted"))
+            } else {
+                Err(error::ErrorBadRequest("Unsupported file type"))
+            }
         }
+        Err(_) => Err(error::ErrorNotFound("File or directory not found")),
     }
 }
 #[post("/upload")]

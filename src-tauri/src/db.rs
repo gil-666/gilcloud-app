@@ -235,6 +235,7 @@ pub async fn init_db() -> SqlitePool {
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             username TEXT NOT NULL UNIQUE,
             password_hash TEXT NOT NULL,
+            type TEXT NOT NULL DEFAULT 'user',
             storage_total INTEGER NOT NULL DEFAULT 32212254720,
             storage_used INTEGER NOT NULL DEFAULT 0
         )

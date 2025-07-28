@@ -97,7 +97,7 @@ async function deleteFile(filePath: string){
     await axios.delete(`${window.API_URL}/delete/${username}/${encodedPath}`);
     await loadDirectory()
     toast.add({
-      detail: `File ${filePath} was deleted successfully`,
+      detail: `File ${encodedPath} was deleted successfully`,
       summary: "File deleted",
       severity: "info",
       life: 3000,
@@ -149,7 +149,7 @@ watch(
       <p v-if="isDirEmpty()" class="font-light">No items to show</p>
 
       <div class="file-list gap-10 grid 2xl:grid-cols-8 lg:grid-cols-4 grid-cols-2 justify-items-center  ">
-        <Folder class="" v-for="folder in folders" v-bind="folder" @click="changeDir(folder.path)"></Folder>
+        <Folder class="" v-for="folder in folders" v-bind="folder" @delete="deleteFile(folder.path)" @click="changeDir(folder.path)"></Folder>
         <File @click="downloadFile(file.path)" @delete="deleteFile(file.path)" v-for="file in files" v-bind="file"></File>
       </div>
 

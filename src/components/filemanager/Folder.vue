@@ -4,11 +4,17 @@ const props = defineProps({
     type: String,
     required: true
   },
+  path: {
+    type: String,
+    required: true
+  },
 })
+const emit = defineEmits(['delete'])
 </script>
 
 <template>
 <div class="folder-item rounded-2xl p-5 border-1 border-neutral-700 w-full h-full place-items-center">
+  <i @click.stop="emit('delete')" class="sm:ml-14 delete-file pi pi-trash absolute ml-12 z-10" style="font-size: 20px"></i>
   <i class="pi pi-folder " style="font-size: 40px"/>
   <p class="wrap-anywhere">{{props.name}}</p>
 </div>
@@ -22,5 +28,11 @@ const props = defineProps({
 .folder-item:hover {
   background-color: grey;
   box-shadow: inset #f6f6f6 0 0 10px 2px;
+}
+.delete-file{
+  transition: color 0.5s ease;
+}
+.delete-file:hover{
+  color: red;
 }
 </style>
