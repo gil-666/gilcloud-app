@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref } from "vue"
+import {ref} from "vue"
 import axios from "axios"
 import {useAppStore} from "../stores/app.ts";
+import router from "@/router";
 const emit = defineEmits(["loginSuccess"])
 // Reactive state
 const isLogin = ref(true)
@@ -9,6 +10,9 @@ const username = ref("")
 const password = ref("")
 const errorMessage = ref("")
 const store = useAppStore();
+  if(localStorage.getItem('username')){
+    router.push({name: 'home'})
+  }
 // Toggle form
 const toggleForm = () => {
   isLogin.value = !isLogin.value
@@ -48,7 +52,8 @@ const handleSubmit = async () => {
       })
       console.log("home dir set: "+store.userHomeDir)
       alert("Login successful!")
-
+      store.setIsLoggedIn(true)
+      await router.push('/')
       emit("loginSuccess")
     } else {
       alert("Registration successful! You can now log in.")
@@ -63,7 +68,7 @@ const handleSubmit = async () => {
 
 <template>
   <div
-      class="bg-login backdrop-blur-3xl fixed z-100 bg-neutral-900 w-screen h-screen"
+      class="bg-login backdrop-blur-3xl fixed inset-0 z-100 bg-neutral-900 w-screen h-screen"
   >
     <div class="flex w-full h-full items-center justify-center">
       <div

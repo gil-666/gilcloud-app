@@ -25,6 +25,7 @@ export default defineConfig(async () => ({
     port: 1420,
     strictPort: true,
     host: host || false,
+    allowedHosts: ['gilcloud.hanekawa.online'],
     hmr: host
       ? {
           protocol: "ws",

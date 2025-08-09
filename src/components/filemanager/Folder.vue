@@ -13,8 +13,8 @@ const emit = defineEmits(['delete'])
 </script>
 
 <template>
-<div class="folder-item rounded-2xl p-5 border-1 border-neutral-700 w-full h-full place-items-center">
-  <i @click.stop="emit('delete')" class="sm:ml-14 delete-file pi pi-trash absolute ml-12 z-10" style="font-size: 20px"></i>
+<div class="folder-item rounded-2xl p-5 border-1 border-neutral-700 w-full h-full place-items-center relative">
+  <i @click.stop="emit('delete')" class="right-2 top-2 p-1 delete-file pi pi-trash absolute z-10" style="font-size: 20px"></i>
   <i class="pi pi-folder " style="font-size: 40px"/>
   <p class="wrap-anywhere">{{props.name}}</p>
 </div>

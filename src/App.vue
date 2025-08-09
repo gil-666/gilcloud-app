@@ -9,6 +9,8 @@ import UploadDialog from "./components/filemanager/UploadDialog.vue";
 import axios, {AxiosProgressEvent} from "axios";
 import {useAppStore} from "./stores/app.ts";
 import Toast from './volt/Toast.vue';
+import Loader from "@/components/Loader.vue";
+import router from '@/router'
 const window2 = window;
 const isLoggedIn = ref(false);
 const store = useAppStore();;
@@ -18,8 +20,7 @@ const uploadVisible = ref(false);
 const selectedFile = ref<File | null>(null);
 const uploadProgress = ref(0);
 const isUploading = ref(false);
-const isSidebarOpen = ref(false);
-const toggleSidebar = () => (isSidebarOpen.value = !isSidebarOpen.value);
+const toggleSidebar = () => (store.UIEvents.showMenuBar = !store.UIEvents.showMenuBar);
 
 onMounted(() => {
   if (localStorage.getItem("username")) {
@@ -27,6 +28,8 @@ onMounted(() => {
     updateStorageCount();
     setHomeDir();
 
+  }else{
+    router.push('/login')
   }
 });
 
@@ -78,32 +81,42 @@ async function uploadFile(file: File) {
     });
     console.log(selectedFile.value.name);
     console.log('Upload complete!');
-    window.location.reload();
+
   } catch (error) {
     console.error('Upload error:', error);
   } finally {
     isUploading.value = false;
+    setTimeout(() => {
+      window.location.reload();
+    }, 1000)
+
   }
 }
 </script>
 
 <template>
-  <Login v-if="!isLoggedIn" @loginSuccess="isLoggedIn = true;setHomeDir"></Login>
+<!--  <Login v-if="!isLoggedIn" @loginSuccess="isLoggedIn = true;setHomeDir"></Login>-->
   <main>
     <div class="header bg-neutral-900 w-full fixed z-90">
       <div class="header-content place-items-center p-4 flex">
         <Button @click="toggleSidebar" class="lg:hidden fixed z-30">
           ☰
         </Button>
-        <div class="logo w-35 place-items-center">
-          <p class="text-2xl font-bold h-fit">GilCloud</p>
-          <p class="bg-green-900 w-fit">Cloud Services</p>
+        <div class="logo w-55 place-items-center flex">
+          <div>
+            <img class="ml-2 logo scale-110" width="56" src="@/assets/logtrans.png">
+          </div>
+          <div class="text-logo transition-all duration-250 opacity-100 not-sm:opacity-0 ">
+            <p class="text-2xl font-bold h-fit">GilCloud</p>
+<!--            <p class="bg-green-900 w-fit">Cloud Services</p>-->
+          </div>
+
         </div>
 <!--        <Divider layout="vertical"></Divider>-->
 
         <div class="logout-button absolute flex right-3 top-6">
           <input class="sr-only" type="file" name="bruh">
-          <p class="content-center mr-4 sm:block hidden">Hola!, {{store.username}}</p>
+          <p class="content-center mr-4 sm:block hidden">Hello, {{store.username}}!</p>
           <Button @click="uploadVisible = !uploadVisible; console.log(uploadVisible)"
                   class="upload-btn pi pi-upload mr-5"><p style="font-family: Inter,sans-serif">Upload</p></Button>
           <Button label="Log Out" @click="logOut"></Button>
@@ -113,9 +126,12 @@ async function uploadFile(file: File) {
     <div class="flex relative h-screen">
       <div
           class="side-bar h-full fixed lg:relative z-20 bg-neutral-900 min-w-40 max-w-50 text-center w-full flex-col transition-transform duration-300"
-          :class="isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'"
+          :class="store.UIEvents.showMenuBar ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'"
       >
         <div class="side-bar-inside mt-30 w-full ">
+          <div class="user-label -mt-5 mb-2">
+            <p class="content-center not-sm:block hidden">Hello, {{store.username}}!</p>
+          </div>
           <router-link @click="toggleSidebar" to="/"><Button class="btn-sidebar w-full mb-5" label="Drive"></Button></router-link>
           <router-link @click="toggleSidebar" to="/vm"><Button class="btn-sidebar w-full" label="miguel"></Button></router-link>
         </div>
@@ -128,8 +144,14 @@ async function uploadFile(file: File) {
       <div class="font-bold flex-col w-full mt-22">
         <Toast/>
         <Suspense>
-          <RouterView/>
+          <template #default>
+            <RouterView/>
+          </template>
+          <template #fallback>
+            <Loader />
+          </template>
         </Suspense>
+
       </div>
     </div>
   </main>
@@ -139,7 +161,15 @@ async function uploadFile(file: File) {
 </template>
 
 <style scoped>
-
+.text-logo{
+  @media not (width >= 41rem /* 640px */) { /*CUSTOM PORQUE SI NO FUNCIONA OPACITY ANIM*/
+    opacity: 0%;
+  }
+}
+.logo-img{
+  transform: scale(120%);
+  text-align: center;
+}
 .logo {
   text-align: center;
 }

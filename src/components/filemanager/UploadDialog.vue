@@ -37,7 +37,7 @@ function onDragOver(event: DragEvent) {
 }
 
 onMounted(async () => {
-  const webview = await getCurrentWebview();
+  const webview = getCurrentWebview();
 
   unlisten = await webview.onDragDropEvent((event) => {
     if (event.payload.type === 'drop') {

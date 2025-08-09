@@ -7,7 +7,12 @@ export const useAppStore = defineStore('app', () => {
     const language = ref('en');
     const currentDir = ref('')
     const progress = ref('')
+    const isLoggedIn = ref(false);
     const username = ref(localStorage.getItem('username') || '');
+    const UIEvents = ref({
+        showFileDropdown: false,
+        showMenuBar: false
+    });
     type StorageCount = {
         maxStorage: number;
         currentUsage: number;
@@ -17,6 +22,13 @@ export const useAppStore = defineStore('app', () => {
         maxStorage: 0,
         currentUsage: 0,
     });
+    function setIsLoggedIn(value:boolean){
+        isLoggedIn.value = value;
+    }
+    function closeMenus(){
+        UIEvents.value.showMenuBar = false;
+        UIEvents.value.showFileDropdown = false;
+    }
     function setUserHomeDir(dir: string) {
         userHomeDir.value = dir;
         setCurrentDir(dir)
@@ -44,9 +56,12 @@ export const useAppStore = defineStore('app', () => {
         currentDir,
         username,
         storageCount,
+        UIEvents,
         progress,
+        closeMenus,
         calculateProgress,
         setStorageCount,
+        setIsLoggedIn,
         setCurrentDir,
         setUserHomeDir,
         setLanguage

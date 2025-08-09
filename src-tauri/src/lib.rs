@@ -49,6 +49,7 @@ async fn download_file(
     let base_dir = base_dir.canonicalize()?;
     let full_path = base_dir.join(&username).join(&filename).canonicalize()?;
 
+    //stop guessing home dirs
     if !full_path.starts_with(&base_dir) {
         return Err(actix_web::error::ErrorForbidden("Access denied"));
     }
