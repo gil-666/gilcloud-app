@@ -8,7 +8,7 @@ import axios, {AxiosProgressEvent} from "axios";
 import {useAppStore} from "./stores/app.ts";
 import Toast from './volt/Toast.vue';
 import Loader from "@/components/Loader.vue";
-import router from '@/router'
+import router from './router'
 import VideoPlayer from "./components/media/VideoPlayer.vue";
 const window2 = window;
 const isLoggedIn = ref(false);
@@ -133,7 +133,7 @@ async function uploadFile(file: File) {
             <p class="content-center not-sm:block hidden">Hello, {{store.username}}!</p>
           </div>
           <router-link @click="toggleSidebar" to="/"><Button class="btn-sidebar w-full mb-5" label="Drive"></Button></router-link>
-          <router-link @click="toggleSidebar" to="/vm"><Button class="btn-sidebar w-full" label="miguel"></Button></router-link>
+          <!-- <router-link @click="toggleSidebar" to="/vm"><Button class="btn-sidebar w-full" label="miguel"></Button></router-link> -->
         </div>
         <div class="progress-bar mt-5 p-3 max-w-full bottom-10">
           <p class="storage-counter">{{ (storageCount.currentUsage / 1024).toFixed(2) }}GB of

@@ -13,11 +13,6 @@ const router = createRouter({
             name: 'home',
             component: () => import('../views/FileManager.vue'),
         },
-        {
-            path: '/vm',
-            name: 'vm',
-            component: () => import('../views/VirtualMachines.vue'),
-        },
     ],
 })
 
