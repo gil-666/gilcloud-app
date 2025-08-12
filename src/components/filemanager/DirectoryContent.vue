@@ -1,7 +1,8 @@
 <template>
         <div>
-          <p v-if="isDirEmpty" class="font-light">{{(folders.length == 0 && files.length == 0) ? "No items to show" : "Loading" }}</p>
-          <div class="file-list gap-10 grid 2xl:grid-cols-8 lg:grid-cols-4 grid-cols-2 justify-items-center">
+          <p v-if="isDirEmpty()" class="font-light">No items to show</p>
+          <!-- <p class="font-light" id="load">Loading</p> -->
+          <div v-if="!isDirEmpty()" class="file-list gap-10 grid 2xl:grid-cols-8 lg:grid-cols-4 grid-cols-2 justify-items-center">
             <Folder
                 v-for="folder in folders"
                 :key="folder.path"
@@ -18,12 +19,13 @@
                 @link-generate="generateLink(file.path)"
             />
           </div>
+          
         </div>
 
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch, defineEmits } from "vue";
+import { ref, defineEmits } from "vue";
 import axios from "axios";
 import Folder from "../../components/filemanager/Folder.vue";
 import File from "../../components/filemanager/File.vue";
@@ -37,7 +39,6 @@ const emit = defineEmits<{
 const props = defineProps<{ dir: string }>();
 const store = useAppStore();
 const toast = useToast();
-
 const folders = ref<any[]>([]);
 const files = ref<any[]>([]);
 
@@ -128,9 +129,7 @@ async function updateStorageCount() {
   store.setStorageCount(response.data);
 }
 
-const isDirEmpty = computed(
-    () => folders.value.length === 0 && files.value.length === 0
-);
+const isDirEmpty = () => folders.value.length === 0 && files.value.length === 0
 
 // suspend point: load on mount / whenever dir prop changes
 async function loadDirectory(dir: string) {

@@ -1,0 +1,25 @@
+{
+    "video": {
+        "icon": "pi pi-video",
+        "extensions": [
+            ".mp4",
+            ".mkv",
+            ".mov"
+        ]
+    },
+    "photo": {
+        "icon": "pi pi-image",
+        "extensions": [
+            ".jpg",
+            ".png"
+        ]
+    },
+    "music": {
+        "icon": "pi pi-headphones",
+        "extensions": [
+            ".mp3",
+            ".wav",
+            ".flac"
+        ]
+    }
+}

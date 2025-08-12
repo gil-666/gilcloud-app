@@ -1,9 +1,7 @@
 <script setup lang="ts" xmlns="http://www.w3.org/1999/html">
 import {computed, onMounted, ref} from "vue";
 import Button from "./volt/Button.vue";
-import Divider from "./volt/Divider.vue";
 import ProgressBar from "./volt/ProgressBar.vue";
-import Login from "./components/Login.vue";
 import {RouterView, RouterLink} from "vue-router";;
 import UploadDialog from "./components/filemanager/UploadDialog.vue";
 import axios, {AxiosProgressEvent} from "axios";
@@ -11,6 +9,7 @@ import {useAppStore} from "./stores/app.ts";
 import Toast from './volt/Toast.vue';
 import Loader from "@/components/Loader.vue";
 import router from '@/router'
+import VideoPlayer from "./components/media/VideoPlayer.vue";
 const window2 = window;
 const isLoggedIn = ref(false);
 const store = useAppStore();;
@@ -97,6 +96,7 @@ async function uploadFile(file: File) {
 <template>
 <!--  <Login v-if="!isLoggedIn" @loginSuccess="isLoggedIn = true;setHomeDir"></Login>-->
   <main>
+
     <div class="header bg-neutral-900 w-full fixed z-90">
       <div class="header-content place-items-center p-4 flex">
         <Button @click="toggleSidebar" class="lg:hidden fixed z-30">
