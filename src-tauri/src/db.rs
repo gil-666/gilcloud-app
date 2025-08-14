@@ -216,6 +216,15 @@ pub async fn init_db() -> SqlitePool {
         }
     }
 
+    let storage_dirs = ["movies", "music", "games"];
+    for folder in &storage_dirs {
+        let mut path = PathBuf::from(project_root);
+        path.push(format!("data/storage/{}", folder));
+        if !path.exists() {
+            fs::create_dir_all(&path).expect(&format!("Failed to create {:?}", path));
+        }
+    }
+
     // Construct database url with absolute path
     let database_url = format!("sqlite://{}", db_path.display());
     // Create the database file if it doesn't exist

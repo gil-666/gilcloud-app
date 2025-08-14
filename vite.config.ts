@@ -11,9 +11,12 @@ const host = process.env.TAURI_DEV_HOST;
 // https://vitejs.dev/config/
 export default defineConfig(async () => ({
   plugins: [vue(),tailwindcss()],
+    optimizeDeps: {
+      exclude: ['lightningcss']},
     resolve: {
         alias: {
             '@': path.resolve(__dirname, './src'),
+            'lightningcss/node': 'lightningcss'
         },
     },
 

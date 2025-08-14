@@ -1,47 +1,24 @@
 <template>
-      <NewFolder
-          @close="newFolderVisible = false"
-          @submit="createFolder"
-          v-if="newFolderVisible"
-      ></NewFolder>
+  <NewFolder @close="newFolderVisible = false" @submit="createFolder" v-if="newFolderVisible"></NewFolder>
 
 
-  <main
-      @click="store.closeMenus()"
-      class="bg-neutral-800 w-full lg:p-5 p-2 pt-2 text-center h-full overflow-hidden"
-  >
+  <main @click="store.closeMenus()" class="bg-neutral-800 w-full lg:p-5 p-2 pt-2 text-center h-full overflow-hidden">
     <div class="flex relative place-items-center w-full justify-center">
       <div class="controls lg:absolute mr-5 left-5">
-        <i
-            v-if="navHistory.length > 0"
-            class="pi pi-arrow-left cursor-pointer"
-            @click="goBackDir"
-            style="font-size: 18pt"
-            title="Go back"
-        ></i>
-        <i
-            v-if="navHistory.length > 0"
-            class="pi pi-home cursor-pointer lg:ml-4 ml-2"
-            @click="resetDir"
-            style="font-size: 20pt"
-            title="Go to root directory"
-        ></i>
-        <i
-            @click="newFolderVisible = true"
-            class="pi pi-plus-circle cursor-pointer lg:ml-4 ml-2"
-            style="font-size: 20pt"
-            title="New Folder"
-        ></i>
+        <i v-if="navHistory.length > 0" class="pi pi-arrow-left cursor-pointer" @click="goBackDir"
+          style="font-size: 18pt" title="Go back"></i>
+        <i v-if="navHistory.length > 0" class="pi pi-home cursor-pointer lg:ml-4 ml-2" @click="resetDir"
+          style="font-size: 20pt" title="Go to root directory"></i>
+        <i @click="newFolderVisible = true" class="pi pi-plus-circle cursor-pointer lg:ml-4 ml-2"
+          style="font-size: 20pt" title="New Folder"></i>
       </div>
 
-      <h1
-          class="text-3xl pb-2 relative text-center"
-          :title="formatDirText(currentDir,true)"
-      >{{ formatDirText(currentDir) }}</h1>
+      <h1 class="text-3xl pb-2 relative text-center" :title="formatDirText(currentDir, true)">{{
+        formatDirText(currentDir) }}</h1>
     </div>
 
     <div class="border-1 border-neutral-600 m-5 relative bottom-5 p-10 overflow-y-auto h-full max-h-11/12">
-          <DirectoryContent v-model:dir="currentDir" :key="currentDir" />
+      <DirectoryContent v-model:dir="currentDir" :key="currentDir" />
 
 
     </div>
@@ -53,7 +30,6 @@ import { computed, ref } from "vue";
 import { useAppStore } from "../stores/app.ts";
 import NewFolder from "@/components/filemanager/NewFolder.vue";
 import DirectoryContent from "@/components/filemanager/DirectoryContent.vue";
-import Loader from "@/components/Loader.vue";
 
 const store = useAppStore();
 const newFolderVisible = ref(false);
@@ -83,22 +59,22 @@ async function resetDir() {
   navHistory = [];
 }
 
-async function reloadDir(){
+async function reloadDir() {
   currentDir.value = "./" + store.currentDir.replace(/^"|"$/g, "");
   navHistory = [];
 }
 
 function formatDirText(text: string, getUncut = false) {
   const marker = `data/storage/user/`;
-  const normalized = text.replaceAll("\\", "/"); // normalize slashes
+  const normalized = text.replace(/\\/g, "/"); // normalize slashes
   const index = normalized.indexOf(marker);
-  const uncut = text.slice(index + marker.length).replaceAll("\\", "/")
-  if(getUncut){
+  const uncut = text.slice(index + marker.length).replace(/\\/g, "/")
+  if (getUncut) {
     return uncut
   }
-  if(uncut.length > 22){
-    return "..."+String(uncut).slice(uncut.length-22,uncut.length);
-  }else{
+  if (uncut.length > 22) {
+    return "..." + String(uncut).slice(uncut.length - 22, uncut.length);
+  } else {
     return uncut
   }
 

@@ -1,18 +1,22 @@
 mod db;
-use db::{register,login,storage_usage};
-
+use actix_web::HttpRequest;
+use db::{login, register, storage_usage};
+use dunce;
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
+use actix_cors::Cors;
+use actix_files::NamedFile;
+use actix_multipart::Multipart;
+use actix_web::{
+    delete, error, get, middleware, post, web, App, Error, HttpResponse, HttpServer, Responder,
+};
+use futures_util::TryStreamExt as _;
+use sanitize_filename::sanitize;
+use serde_json::json;
+use sqlx::SqlitePool;
 use std::fs as fsb;
 use std::io;
 use std::path::Path;
-use sanitize_filename::sanitize;
-use actix_files::NamedFile;
-use serde_json::json;
-use actix_multipart::Multipart;
-use actix_web::{get, post, delete, web, App, HttpServer, middleware, HttpResponse, Error, error, Responder};
 use std::path::PathBuf;
-use actix_cors::Cors;
-use futures_util::TryStreamExt as _;
 use tokio::fs;
 use tokio::io::AsyncWriteExt;
 
@@ -23,7 +27,7 @@ struct FileEntry {
     size: u64,
 }
 #[derive(serde::Serialize)]
-struct FolderEntry{
+struct FolderEntry {
     name: String,
     path: String,
 }
@@ -36,10 +40,201 @@ struct CreateFolderRequest {
     parent_dir: String,
     folder_name: String,
 }
+#[derive(Debug, sqlx::FromRow)]
+struct Movie {
+    id: i64,
+    title: String,
+    path: String,
+}
+
+#[derive(serde::Serialize)]
+struct MovieResponse {
+    id: i64,
+    title: String,
+    master: String,
+    cover: Option<String>,
+    audiotracks: Vec<String>,
+    subtracks: Vec<String>,
+}
+
+#[get("/movies")]
+pub async fn movies(
+    db: web::Data<SqlitePool>,
+    web::Query(params): web::Query<std::collections::HashMap<String, String>>,
+) -> impl Responder {
+    let movies_dir = Path::new("../data/storage/movies");
+
+    // Helper to scan tracks and map to /movies/{id}/ URLs
+    async fn scan_tracks(folder_path: &Path, id: i64) -> (Vec<String>, Vec<String>) {
+        let mut audiotracks = Vec::new();
+        let mut subtracks = Vec::new();
+
+        if let Ok(mut entries) = tokio::fs::read_dir(folder_path).await {
+            while let Ok(Some(entry)) = entries.next_entry().await {
+                let fname = entry.file_name().to_string_lossy().to_lowercase();
+                if fname.starts_with("audio_") && fname.ends_with(".m3u8") {
+                    if let Some(fname_os) = entry.path().file_name() {
+                        let url = format!("/movies/{}/{}", id, fname_os.to_string_lossy());
+                        audiotracks.push(url);
+                    }
+                }
+                if fname.starts_with("subs_") && fname.ends_with(".vtt") {
+                    if let Some(fname_os) = entry.path().file_name() {
+                        let url = format!("/movies/{}/{}", id, fname_os.to_string_lossy());
+                        subtracks.push(url);
+                    }
+                }
+            }
+        }
+
+        (audiotracks, subtracks)
+    }
+
+    if let Some(id_str) = params.get("id") {
+        // Fetch single movie by id
+        let id = match id_str.parse::<i64>() {
+            Ok(i) => i,
+            Err(_) => return HttpResponse::BadRequest().body("Invalid id"),
+        };
+
+        let movie = sqlx::query_as::<_, Movie>("SELECT id, title, path FROM movies WHERE id = ?")
+            .bind(id)
+            .fetch_optional(db.get_ref())
+            .await;
+
+        let movie = match movie {
+            Ok(Some(m)) => m,
+            Ok(None) => return HttpResponse::NotFound().body("Movie not found"),
+            Err(e) => return HttpResponse::InternalServerError().body(format!("DB error: {}", e)),
+        };
+
+        let folder_path = Path::new(&movie.path);
+        let master_url = format!("/movies/{}/master.m3u8", movie.id);
+
+        let cover_path = folder_path.join("cover.jpg");
+        let cover = if cover_path.exists() {
+            Some(format!("/movies/{}/cover.jpg", movie.id))
+        } else {
+            None
+        };
+
+        let (audiotracks, subtracks) = scan_tracks(folder_path, movie.id).await;
+
+        let response = MovieResponse {
+            id: movie.id,
+            title: movie.title,
+            master: master_url,
+            cover,
+            audiotracks,
+            subtracks,
+        };
+
+        return HttpResponse::Ok().json(response);
+    }
+
+    // No ID: scan all movies directory
+    let mut responses = Vec::new();
+
+    if let Ok(mut entries) = tokio::fs::read_dir(movies_dir).await {
+        while let Ok(Some(entry)) = entries.next_entry().await {
+            if entry.path().is_dir() {
+                let folder_path = entry.path();
+                let title = folder_path
+                    .file_name()
+                    .unwrap()
+                    .to_string_lossy()
+                    .to_string();
+
+                // Check if movie exists in DB
+                let existing =
+                    sqlx::query_as::<_, Movie>("SELECT id, title, path FROM movies WHERE path = ?")
+                        .bind(folder_path.to_string_lossy())
+                        .fetch_optional(db.get_ref())
+                        .await;
+
+                let movie = match existing {
+                    Ok(Some(m)) => m,
+                    Ok(None) => {
+                        // Insert movie if missing
+                        let res = sqlx::query("INSERT INTO movies (title, path) VALUES (?, ?)")
+                            .bind(&title)
+                            .bind(folder_path.to_string_lossy())
+                            .execute(db.get_ref())
+                            .await;
+
+                        match res {
+                            Ok(r) => Movie {
+                                id: r.last_insert_rowid(),
+                                title: title.clone(),
+                                path: folder_path.to_string_lossy().to_string(),
+                            },
+                            Err(e) => {
+                                eprintln!("DB insert error: {}", e);
+                                continue;
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        eprintln!("DB query error: {}", e);
+                        continue;
+                    }
+                };
+
+                let master_url = format!("/movies/{}/master.m3u8", movie.id);
+                let cover_path = folder_path.join("cover.jpg");
+                let cover = if cover_path.exists() {
+                    Some(format!("/movies/{}/cover.jpg", movie.id))
+                } else {
+                    None
+                };
+
+                let (audiotracks, subtracks) = scan_tracks(&folder_path, movie.id).await;
+
+                responses.push(MovieResponse {
+                    id: movie.id,
+                    title: movie.title,
+                    master: master_url,
+                    cover,
+                    audiotracks,
+                    subtracks,
+                });
+            }
+        }
+    }
+
+    HttpResponse::Ok().json(responses)
+}
+
+#[get("/movies/{id}/{filename:.*}")]
+async fn movie_file(
+    req: HttpRequest,
+    db: web::Data<SqlitePool>,
+    path: web::Path<(i64, String)>,
+) -> actix_web::Result<NamedFile> {
+    let (id, filename) = path.into_inner();
+
+    // Lookup movie folder path from DB
+    let movie = sqlx::query!("SELECT path FROM movies WHERE id = ?", id)
+        .fetch_optional(db.get_ref())
+        .await
+        .map_err(|_| actix_web::error::ErrorNotFound("Movie not found"))?;
+
+    let folder = PathBuf::from(
+        movie
+            .ok_or_else(|| actix_web::error::ErrorNotFound("Movie not found"))?
+            .path
+            .ok_or_else(|| actix_web::error::ErrorNotFound("Movie path missing"))?,
+    );
+    let full_path = folder.join(filename);
+
+    // Prevent path traversal
+    let canonical = dunce::canonicalize(&full_path)
+    .map_err(|_| actix_web::error::ErrorNotFound("Invalid path"))?;
+
+    Ok(NamedFile::open(canonical)?)
+}
 #[get("/download/{username}/{filename:.*}")]
-async fn download_file(
-    path: web::Path<(String, String)>,
-) -> Result<NamedFile, actix_web::Error> {
+async fn download_file(path: web::Path<(String, String)>) -> Result<NamedFile, actix_web::Error> {
     let (username, filename) = path.into_inner();
     let base_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("..")
@@ -62,9 +257,7 @@ async fn download_file(
     ))
 }
 #[delete("/delete/{username}/{filename}")]
-async fn delete_file(
-    path: web::Path<(String, String)>,
-) -> Result<HttpResponse, actix_web::Error> {
+async fn delete_file(path: web::Path<(String, String)>) -> Result<HttpResponse, actix_web::Error> {
     let (username, filename) = path.into_inner();
 
     let base_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
@@ -84,7 +277,7 @@ async fn delete_file(
     // Delete file
     match fs::metadata(&full_path).await {
         Ok(metadata) => {
-            println!("{}",&full_path.display());
+            println!("{}", &full_path.display());
             if metadata.is_file() {
                 fs::remove_file(&full_path).await.map_err(|e| {
                     eprintln!("Error deleting file: {}", e);
@@ -120,7 +313,6 @@ async fn upload(mut payload: Multipart) -> Result<HttpResponse, Error> {
 
         // Get the name of the field (e.g., "file", "dir")
         let name = field.name().to_string();
-
 
         if name == "dir" {
             // Collect the "dir" value from the multipart field
@@ -165,7 +357,9 @@ fn greet(name: &str) -> String {
     format!("Hello, {}! You've been greeted from Rust!", name)
 }
 #[get("/folders")]
-async fn folders(web::Query(params): web::Query<std::collections::HashMap<String, String>>) -> impl Responder {
+async fn folders(
+    web::Query(params): web::Query<std::collections::HashMap<String, String>>,
+) -> impl Responder {
     let dir = match params.get("dir") {
         Some(d) => d,
         None => return HttpResponse::BadRequest().body("Missing 'dir' parameter"),
@@ -185,14 +379,19 @@ async fn folders(web::Query(params): web::Query<std::collections::HashMap<String
                 })
             })
             .collect(),
-        Err(e) => return HttpResponse::InternalServerError().body(format!("Failed to read directory: {}", e)),
+        Err(e) => {
+            return HttpResponse::InternalServerError()
+                .body(format!("Failed to read directory: {}", e))
+        }
     };
 
     HttpResponse::Ok().json(entries)
 }
 
 #[get("/files")]
-async fn files(web::Query(params): web::Query<std::collections::HashMap<String, String>>) -> impl Responder {
+async fn files(
+    web::Query(params): web::Query<std::collections::HashMap<String, String>>,
+) -> impl Responder {
     let dir = match params.get("dir") {
         Some(d) => d,
         None => return HttpResponse::BadRequest().body("Missing 'dir' parameter"),
@@ -214,7 +413,10 @@ async fn files(web::Query(params): web::Query<std::collections::HashMap<String, 
                 })
             })
             .collect(),
-        Err(e) => return HttpResponse::InternalServerError().body(format!("Failed to read directory: {}", e)),
+        Err(e) => {
+            return HttpResponse::InternalServerError()
+                .body(format!("Failed to read directory: {}", e))
+        }
     };
 
     HttpResponse::Ok().json(entries)
@@ -234,16 +436,18 @@ async fn create_folder(
     let target_dir = target_dir.canonicalize().unwrap_or(target_dir);
 
     // Prevent path traversal
-//     if !target_dir.starts_with(&base_dir) {
-//         return Err(actix_web::error::ErrorForbidden("Access denied"));
-//     }
+    //     if !target_dir.starts_with(&base_dir) {
+    //         return Err(actix_web::error::ErrorForbidden("Access denied"));
+    //     }
 
     // Create the folder
     match fs::create_dir_all(&target_dir).await {
         Ok(_) => Ok(HttpResponse::Ok().body("Folder created")),
         Err(e) => {
             eprintln!("Error creating folder: {}", e);
-            Err(actix_web::error::ErrorInternalServerError("Failed to create folder"))
+            Err(actix_web::error::ErrorInternalServerError(
+                "Failed to create folder",
+            ))
         }
     }
 }
@@ -272,6 +476,8 @@ pub async fn run() {
                     .service(upload)
                     .service(register)
                     .service(login)
+                    .service(movies)
+                    .service(movie_file)
                     .service(download_file)
                     .service(storage_usage)
                     .service(folders)
@@ -279,11 +485,11 @@ pub async fn run() {
                     .service(delete_file)
                     .service(create_folder)
             })
-                .bind(("0.0.0.0", 8080))
-                .expect("Failed to bind Actix server")
-                .run()
-                .await
-                .expect("Server run failed");
+            .bind(("0.0.0.0", 8080))
+            .expect("Failed to bind Actix server")
+            .run()
+            .await
+            .expect("Server run failed");
         }
     });
     tauri::Builder::default()
@@ -292,4 +498,3 @@ pub async fn run() {
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
-

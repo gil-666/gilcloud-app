@@ -10,4 +10,15 @@ function getFileTypeIcon(filename: string) {
     }
     return null;
 }
-export {getFileTypeIcon}
+function getFileTypeString(filename: string) {
+  const extension = filename.slice(filename.lastIndexOf("."),filename.length)
+//   console.log("file", extension)
+  for (const [name, type] of Object.entries(fileTypes)) {
+        if (type.extensions.includes(extension)) {
+            return name
+        }
+
+  }
+    return null;
+}
+export {getFileTypeIcon,getFileTypeString}

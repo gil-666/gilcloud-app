@@ -96,10 +96,9 @@ async function uploadFile(file: File) {
 <template>
 <!--  <Login v-if="!isLoggedIn" @loginSuccess="isLoggedIn = true;setHomeDir"></Login>-->
   <main>
-
     <div class="header bg-neutral-900 w-full fixed z-90">
       <div class="header-content place-items-center p-4 flex">
-        <Button @click="toggleSidebar" class="lg:hidden fixed z-30">
+        <Button @click="toggleSidebar()" class="lg:hidden fixed z-30">
           ☰
         </Button>
         <div class="logo w-55 place-items-center flex">
@@ -133,7 +132,7 @@ async function uploadFile(file: File) {
             <p class="content-center not-sm:block hidden">Hello, {{store.username}}!</p>
           </div>
           <router-link @click="toggleSidebar" to="/"><Button class="btn-sidebar w-full mb-5" label="Drive"></Button></router-link>
-          <!-- <router-link @click="toggleSidebar" to="/vm"><Button class="btn-sidebar w-full" label="miguel"></Button></router-link> -->
+          <router-link @click="toggleSidebar" to="/movies"><Button class="btn-sidebar w-full" label="Movies"></Button></router-link>
         </div>
         <div class="progress-bar mt-5 p-3 max-w-full bottom-10">
           <p class="storage-counter">{{ (storageCount.currentUsage / 1024).toFixed(2) }}GB of

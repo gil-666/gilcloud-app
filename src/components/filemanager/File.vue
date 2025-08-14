@@ -13,7 +13,7 @@ const props = defineProps({
     required: true
   },
 })
-const emit = defineEmits(['delete','link-generate'])
+const emit = defineEmits(['delete','link-generate','download']);
 const showDropdown = ref(false);
 const folderItemRef = ref<HTMLElement | null>(null);
 function formatText(text: string){
@@ -65,8 +65,9 @@ onBeforeUnmount(() => {
       <div @click.stop="showDropdown =  !showDropdown;" class="pi pi-ellipsis-h p-1 menu rounded-2xl absolute z-10"></div>
       <div class="dropdown-menu absolute z-100 mt-5" :class="showDropdown ? 'translate-y-2 opacity-100 pointer-events-auto' : '-translate-y-5 opacity-0 pointer-events-none'">
         <ul class="bg-neutral-700 border-1 border-zinc-500">
-          <li @click.stop="emit('delete')" class="p-2 dropdown-btn">Delete</li>
+          <li @click.stop="emit('download');showDropdown = false" class="p-2 dropdown-btn">Download</li>
           <li @click.stop="emit('link-generate');showDropdown = false" class="p-2 dropdown-btn">Share link</li>
+          <li @click.stop="emit('delete');showDropdown = false" class="p-2 dropdown-btn delete-file">Delete</li>
         </ul>
       </div>
 

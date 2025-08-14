@@ -1,5 +1,6 @@
 <template>
         <div>
+          <VideoPlayer @close="videoActive = false" v-if="videoActive" :src="videoSource"></VideoPlayer>
           <p v-if="isDirEmpty()" class="font-light">No items to show</p>
           <!-- <p class="font-light" id="load">Loading</p> -->
           <div v-if="!isDirEmpty()" class="file-list gap-10 grid 2xl:grid-cols-8 lg:grid-cols-4 grid-cols-2 justify-items-center">
@@ -14,8 +15,9 @@
                 v-for="file in files"
                 :key="file.path"
                 v-bind="file"
-                @click="downloadFile(file.path)"
+                @click="(getFileTypeString(file.name) == 'video' ? loadVideo(file.path) : downloadFile(file.path))"
                 @delete="deleteFile(file.path)"
+                @download="downloadFile(file.path)"
                 @link-generate="generateLink(file.path)"
             />
           </div>
@@ -31,6 +33,7 @@ import Folder from "../../components/filemanager/Folder.vue";
 import File from "../../components/filemanager/File.vue";
 import { useAppStore } from "../../stores/app.ts";
 import { useToast } from "primevue";
+import { getFileTypeString } from "../../util/fileTypes.ts";
 
 const emit = defineEmits<{
   (e: "update:dir", dir: string): void;
@@ -44,6 +47,11 @@ const files = ref<any[]>([]);
 
 let navHistory: string[] = [];
 
+//video player
+import VideoPlayer from "../../components/media/VideoPlayer.vue";
+import { perEnvironmentPlugin } from "vite";
+const videoActive = ref(false);
+const videoSource = ref('');
 // helpers
 function extractRelativePath(fullPath: string, username: string): string {
   const marker = `/user/${username}/`;
@@ -142,7 +150,10 @@ await (async () => {
   await loadDirectory(props.dir); // Suspense will suspend here
 })();
 
-
+function loadVideo(filePath: string) {
+  videoSource.value = filePath;
+  videoActive.value = true;
+}
 // watch(
 //     () => props.dir,
 //     async (newDir, oldDir) => {

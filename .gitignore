@@ -25,3 +25,4 @@ dist-ssr
 
 #user data
 data
+src-tauri/cargo

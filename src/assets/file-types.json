@@ -3,7 +3,6 @@
         "icon": "pi pi-video",
         "extensions": [
             ".mp4",
-            ".mkv",
             ".mov"
         ]
     },
