@@ -2,9 +2,10 @@
 import {ref} from "vue"
 import axios from "axios"
 import {useAppStore} from "../stores/app.ts";
-import router from "@/router";
+import { useRouter } from "vue-router";
 const emit = defineEmits(["loginSuccess"])
 // Reactive state
+const router = useRouter();
 const isLogin = ref(true)
 const username = ref("")
 const password = ref("")

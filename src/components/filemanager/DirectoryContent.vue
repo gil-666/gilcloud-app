@@ -1,5 +1,6 @@
 <template>
         <div>
+          <ImageViewer @close="imageActive = false" v-if="imageActive" :src="imageSource"></ImageViewer>
           <VideoPlayer @close="videoActive = false" v-if="videoActive" :src="videoSource"></VideoPlayer>
           <p v-if="isDirEmpty()" class="font-light">No items to show</p>
           <!-- <p class="font-light" id="load">Loading</p> -->
@@ -15,7 +16,13 @@
                 v-for="file in files"
                 :key="file.path"
                 v-bind="file"
-                @click="(getFileTypeString(file.name) == 'video' ? loadVideo(file.path) : downloadFile(file.path))"
+                @click="
+                  getFileTypeString(file.name) === 'video'
+                    ? loadVideo(file.path)
+                    : getFileTypeString(file.name) === 'photo'
+                      ? loadImage(file)
+                      : downloadFile(file.path)
+                "
                 @delete="deleteFile(file.path)"
                 @download="downloadFile(file.path)"
                 @link-generate="generateLink(file.path)"
@@ -33,7 +40,7 @@ import Folder from "../../components/filemanager/Folder.vue";
 import File from "../../components/filemanager/File.vue";
 import { useAppStore } from "../../stores/app.ts";
 import { useToast } from "primevue";
-import { getFileTypeString } from "../../util/fileTypes.ts";
+import { FileStructure, getFileTypeString } from "../../util/fileTypes.ts";
 
 const emit = defineEmits<{
   (e: "update:dir", dir: string): void;
@@ -49,13 +56,17 @@ let navHistory: string[] = [];
 
 //video player
 import VideoPlayer from "../../components/media/VideoPlayer.vue";
-import { perEnvironmentPlugin } from "vite";
 const videoActive = ref(false);
 const videoSource = ref('');
+
+//image viewer
+import ImageViewer from "../../components/media/ImageViewer.vue";
+const imageActive = ref(false);
+const imageSource: FileStructure | any = ref(null)
 // helpers
 function extractRelativePath(fullPath: string, username: string): string {
   const marker = `/user/${username}/`;
-  const normalized = fullPath.replaceAll("\\", "/"); // normalize slashes
+  const normalized = fullPath.replace(/\\/g, "/"); // normalize slashes
   const index = normalized.indexOf(marker);
   if (index === -1) return ""; // username not found
   return normalized.slice(index + marker.length);
@@ -110,7 +121,7 @@ async function deleteFile(filePath: string) {
 
 async function changeDir(newDir: string) {
   navHistory.push(props.dir);
-  const normalized = newDir.replaceAll("\\", "/");
+  const normalized = newDir.replace(/\\/g, "/");
   emit("update:dir", normalized);
 }
 
@@ -153,6 +164,11 @@ await (async () => {
 function loadVideo(filePath: string) {
   videoSource.value = filePath;
   videoActive.value = true;
+}
+
+function loadImage(file: FileStructure) {
+  imageSource.value = file;
+  imageActive.value = true;
 }
 // watch(
 //     () => props.dir,

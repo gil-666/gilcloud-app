@@ -1,5 +1,9 @@
 import fileTypes from "../assets/file-types.json"
-
+interface FileStructure {
+  name: string;
+  path: string;
+  size: number;
+}
 function getFileTypeIcon(filename: string) {
   const extension = filename.slice(filename.lastIndexOf("."),filename.length)
 //   console.log("file", extension)
@@ -22,3 +26,4 @@ function getFileTypeString(filename: string) {
     return null;
 }
 export {getFileTypeIcon,getFileTypeString}
+export type {FileStructure}

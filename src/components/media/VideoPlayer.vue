@@ -1,5 +1,5 @@
 <template>
-    <div class="video-player-container fixed inset-0 flex justify-center z-100">
+    <div class="video-player-container fixed inset-0 flex justify-center z-100" @click="$emit('close')">
         <i class="pi pi-times fixed right-4 top-4 cursor-pointer z-100" @click="$emit('close')"
             style="font-size: 30px"></i>
 
@@ -56,8 +56,8 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from 'vue'
-
+import { onMounted, onUnmounted, ref, VNodeRef, onBeforeUnmount } from 'vue'
+import { detectHls, detectMaster, updateStreamInfo, forceVhsQuality } from '../../helper/videoplayer.ts'
 import videojs from 'video.js'
 // videojs.log.level('debug');
 import 'video.js/dist/video-js.css'
@@ -68,6 +68,7 @@ import { useToast } from 'primevue'
 const emit = defineEmits<{ (e: 'close'): void }>()
 const props = defineProps({
     src: { type: String, required: true },
+    visible: { type: Boolean, default: false },
     title: { type: String, required: false },
     subtracks: { type: Array as () => string[], default: () => [], required: false },
 })
@@ -76,6 +77,7 @@ const toast = useToast()
 
 let player: any = null
 const videoPlayerRef = ref<HTMLVideoElement | null>(null)
+const videoPlayerContainerRef = ref<VNodeRef | null>(null)
 const metadata = ref({
     duration: 0,
     width: 0,
@@ -86,149 +88,96 @@ const isHls = ref(false)
 const isMaster = ref(false)
 const audioTracks = ref<any[]>([])
 const subtitleTracks = ref<any[]>([])
+onMounted(() => {
+    if (!videoPlayerRef.value) return
 
-function detectHls(src: string) {
-    // Simple detection for .m3u8 extension
-    return src.toLowerCase().endsWith('.m3u8')
-}
+    isHls.value = detectHls(props.src)
+    isMaster.value = detectMaster(props.src)
 
-function detectMaster(src: string) {
-    // If filename contains 'master.m3u8'
-    return src.toLowerCase().includes('master.m3u8')
-}
-function updateStreamInfo(player){
-    metadata.value = {
-                duration: player.duration() ?? 0,
-                width: player.videoWidth(),
-                height: player.videoHeight(),
+
+    player = videojs(videoPlayerRef.value, {
+        autoplay: true,
+        controls: true,
+        html5: {
+            vhs: {
+                overrideNative: true // force VHS
             }
-}
-function forceVhsQuality(player, selectedQuality) {
-    const levels = Array.from(player.qualityLevels().levels_).filter(l => l.width && l.height);
-    console.log('Forcing VHS to quality:', selectedQuality);
-    console.log('Available quality levels:', levels);
+        },
+        sources: [{
+            src: props.src,
+            type: isHls.value ? 'application/x-mpegURL' : 'video/mp4'
+        }],
 
-    if (selectedQuality === 'auto') {
-        levels.forEach(l => l.enabled = true);
-        return; // VHS auto-adaptive
-    }
-
-    // Disable all levels except the selected one
-    levels.forEach(l => {
-        const pixels = Math.min(l.width, l.height);
-        l.enabled = pixels === selectedQuality;
-    });
-
-    // Access VHS playlists
-    const vhs = player.tech_?.vhs;
-    if (!vhs) return;
-
-    // Find target playlist by resolution
-    const targetPlaylist = vhs.playlists.main.playlists.find(p => {
-        const res = p.attributes.RESOLUTION;
-        if (!res) return false;
-        const pixels = Math.min(res.width, res.height);
-        return pixels === selectedQuality;
-    });
-
-    if (targetPlaylist) {
-        // Set VHS media directly
-        vhs.playlists.media(targetPlaylist);
-        console.log('VHS playlist switched to', selectedQuality);
-        updateStreamInfo(player);
-    } else {
-        console.warn('Selected quality not found in VHS playlists');
-    }
-}
-    onMounted(() => {
-        if (!videoPlayerRef.value) return
-
-        isHls.value = detectHls(props.src)
-        isMaster.value = detectMaster(props.src)
-
-
-        player = videojs(videoPlayerRef.value, {
-            autoplay: true,
-            controls: true,
-            html5: {
-                vhs: {
-                    overrideNative: true // force VHS even on Safari/iOS
-                }
-            },
-            sources: [{
-                src: props.src,
-                type: isHls.value ? 'application/x-mpegURL' : 'video/mp4'
-            }],
-
-        })
-
-        player.ready(() => {
-            player.hlsQualitySelector({
-                displayCurrentQuality: true,
-            });
-            const hlsPlugin = player.hlsQualitySelector();
-            const origSetQuality = hlsPlugin.setQuality.bind(hlsPlugin);
-            console.log(hlsPlugin)
-            hlsPlugin.setQuality = function (quality) {
-                console.log('Forcing VHS to quality:', quality);
-                forceVhsQuality(player, quality);
-                origSetQuality(quality);
-            };
-            // player.controlBar.addChild('SubsCapsButton', {})
-            // Agrega automáticamente cada .vtt desde props.subtracks
-            props.subtracks.forEach((url: string, idx: number) => {
-                const lang = url.match(/subs_([a-z]{2})/)?.[1] || `lang${idx}`
-                const label = lang === 'sp' ? 'Español' : lang === 'en' ? 'English' : lang
-                player.addRemoteTextTrack({
-                    kind: 'subtitles',
-                    src: url,
-                    srclang: lang,
-                    label: label,
-                    default: idx === 0
-                }, false)
-            });
-
-        })
-        player.on('loadedmetadata', () => {
-            updateStreamInfo(player)
-
-            // Audio tracks
-            const aTracks = []
-            const tracks = player.audioTracks && player.audioTracks()
-            if (tracks && (tracks as any).length) {
-                for (let i = 0; i < (tracks as any).length; i++) {
-                    const t = (tracks as any)[i]
-                    aTracks.push({
-                        label: t.label,
-                        language: t.language,
-                        enabled: t.enabled
-                    })
-                }
-            }
-            console.log('Audio tracks:', aTracks)
-            audioTracks.value = aTracks
-
-        })
-        player.on('error', () => {
-            console.log(props.src)
-            console.error('Error loading video:', player.error())
-            toast.add({
-                severity: 'error',
-                summary: 'Error',
-                detail: 'Failed to load video.',
-                life: 3000
-            })
-            emit('close')
-        })
-        player.on('timeupdate', () => updateStreamInfo(player));
-player.on('resize', () => updateStreamInfo(player));
     })
 
-    onUnmounted(() => {
-        if (player) {
-            player.dispose()
+    player.ready(() => {
+        if (!isHls.value) return;
+        // HLS-specific setup
+        player.hlsQualitySelector({
+            displayCurrentQuality: true,
+        });
+        const hlsPlugin = player.hlsQualitySelector();
+        const origSetQuality = hlsPlugin.setQuality.bind(hlsPlugin);
+        console.log(hlsPlugin)
+        hlsPlugin.setQuality = function (quality: string) {
+            console.log('Forcing VHS to quality:', quality);
+            forceVhsQuality(player, quality);
+            origSetQuality(quality);
+        };
+        // Agrega automáticamente cada .vtt desde props.subtracks
+        props.subtracks.forEach((url: string, idx: number) => {
+            const lang = url.match(/subs_([a-z]{2})/)?.[1] || `lang${idx}`
+            const label = lang === 'sp' ? 'Español' : lang === 'en' ? 'English' : lang
+            player.addRemoteTextTrack({
+                kind: 'subtitles',
+                src: url,
+                srclang: lang,
+                label: label,
+                default: idx === 0
+            }, false)
+        });
+
+    })
+    player.on('loadedmetadata', () => {
+        updateStreamInfo(player, metadata)
+
+        // Audio tracks
+        const aTracks = []
+        const tracks = player.audioTracks && player.audioTracks()
+        if (tracks && (tracks as any).length) {
+            for (let i = 0; i < (tracks as any).length; i++) {
+                const t = (tracks as any)[i]
+                aTracks.push({
+                    label: t.label,
+                    language: t.language,
+                    enabled: t.enabled
+                })
+            }
         }
+        console.log('Audio tracks:', aTracks)
+        audioTracks.value = aTracks
+
     })
+    player.on('error', () => {
+        console.log(props.src)
+        console.error('Error loading video:', player.error())
+        toast.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'Failed to load video.',
+            life: 3000
+        })
+        emit('close')
+    })
+    player.on('timeupdate', () => updateStreamInfo(player, metadata));
+    player.on('resize', () => updateStreamInfo(player, metadata));
+})
+
+onUnmounted(() => {
+    if (player) {
+        player.dispose()
+    }
+})
 </script>
 
 <style scoped>

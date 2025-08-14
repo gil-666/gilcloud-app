@@ -46,7 +46,7 @@ function calculateSize(size:number){ //size in bytes
   }
 }
 function handleClickOutside(event: MouseEvent) {
-  if (folderItemRef.value && !folderItemRef.value.contains(event.target as Node)) {
+  if (folderItemRef && folderItemRef.value && !folderItemRef.value.contains(event.target as Node)) {
     showDropdown.value = false;
   }
 }
@@ -75,7 +75,7 @@ onBeforeUnmount(() => {
     <i :class="getFileTypeIcon(props.name) || 'pi pi-file'" class="mt-3" style="font-size: 50px"/>
     <p class="wrap-anywhere font-light" :title="props.name" >{{formatText(props.name)}}</p>
     <p class="size font-extralight mt-2">{{calculateSize(props.size)}}</p>
-    <p class="down-label hover:opacity-100 relative opacity-0 mt-0">download</p>
+    <p class="down-label hover:opacity-100 relative opacity-0 mt-0">{{getFileTypeIcon(props.name) ? 'open' : 'download'}}</p>
   </div>
 </template>
 
