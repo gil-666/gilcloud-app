@@ -4,6 +4,14 @@ interface FileStructure {
   path: string;
   size: number;
 }
+interface MovieStructure {
+  id: number;
+  title: string;
+  master: string;
+  cover: string;
+  audiotracks: string[];
+  subtracks: string[];
+}
 function getFileTypeIcon(filename: string) {
   const extension = filename.slice(filename.lastIndexOf("."),filename.length)
 //   console.log("file", extension)
@@ -26,4 +34,4 @@ function getFileTypeString(filename: string) {
     return null;
 }
 export {getFileTypeIcon,getFileTypeString}
-export type {FileStructure}
+export type {FileStructure, MovieStructure}

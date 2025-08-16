@@ -1,5 +1,5 @@
 <template>
-    <div class="photo-player-container fixed inset-0 flex justify-center z-100" @click="$emit('close')">
+    <div class="photo-player-container fixed inset-0 flex justify-center z-100">
         <i class="pi pi-times fixed right-4 top-4 cursor-pointer z-100" @click="$emit('close')"
             style="font-size: 30px"></i>
 

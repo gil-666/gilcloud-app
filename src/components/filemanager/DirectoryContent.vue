@@ -1,7 +1,8 @@
 <template>
         <div>
-          <ImageViewer @close="imageActive = false" v-if="imageActive" :src="imageSource"></ImageViewer>
-          <VideoPlayer @close="videoActive = false" v-if="videoActive" :src="videoSource"></VideoPlayer>
+            <AudioPlayer @close="audioActive = false" v-if="audioActive" :src="audioSource"></AudioPlayer>
+            <ImageViewer @close="imageActive = false" v-if="imageActive" :src="imageSource"></ImageViewer>
+            <VideoPlayer @close="videoActive = false" v-if="videoActive" :src="videoSource"></VideoPlayer>
           <p v-if="isDirEmpty()" class="font-light">No items to show</p>
           <!-- <p class="font-light" id="load">Loading</p> -->
           <div v-if="!isDirEmpty()" class="file-list gap-10 grid 2xl:grid-cols-8 lg:grid-cols-4 grid-cols-2 justify-items-center">
@@ -16,13 +17,7 @@
                 v-for="file in files"
                 :key="file.path"
                 v-bind="file"
-                @click="
-                  getFileTypeString(file.name) === 'video'
-                    ? loadVideo(file.path)
-                    : getFileTypeString(file.name) === 'photo'
-                      ? loadImage(file)
-                      : downloadFile(file.path)
-                "
+                @click="performFileAction(file)"
                 @delete="deleteFile(file.path)"
                 @download="downloadFile(file.path)"
                 @link-generate="generateLink(file.path)"
@@ -63,6 +58,11 @@ const videoSource = ref('');
 import ImageViewer from "../../components/media/ImageViewer.vue";
 const imageActive = ref(false);
 const imageSource: FileStructure | any = ref(null)
+
+//audio player
+import AudioPlayer from "../media/AudioPlayer.vue";
+const audioActive = ref(false);
+const audioSource: FileStructure | any = ref('');
 // helpers
 function extractRelativePath(fullPath: string, username: string): string {
   const marker = `/user/${username}/`;
@@ -151,11 +151,18 @@ async function updateStorageCount() {
 const isDirEmpty = () => folders.value.length === 0 && files.value.length === 0
 
 // suspend point: load on mount / whenever dir prop changes
+const isLoading = ref(true);
+
 async function loadDirectory(dir: string) {
+  isLoading.value = true;
   folders.value = [];
   files.value = [];
-  folders.value = await getFolders(dir);
-  files.value = await getFiles(dir);
+  try {
+    folders.value = await getFolders(dir);
+    files.value = await getFiles(dir);
+  } finally {
+    isLoading.value = false;
+  }
 }
 await (async () => {
   await loadDirectory(props.dir); // Suspense will suspend here
@@ -169,6 +176,24 @@ function loadVideo(filePath: string) {
 function loadImage(file: FileStructure) {
   imageSource.value = file;
   imageActive.value = true;
+}
+
+function loadAudio(file: FileStructure) {
+  audioSource.value = file;
+  audioActive.value = true;
+}
+
+function performFileAction(file: FileStructure) {
+  const fileType = getFileTypeString(file.name);
+  if (fileType === "video") {
+    loadVideo(file.path);
+  } else if (fileType === "photo") {
+    loadImage(file);
+  } else if (fileType === "audio") {
+    loadAudio(file);
+  } else {
+    downloadFile(file.path);
+  }
 }
 // watch(
 //     () => props.dir,

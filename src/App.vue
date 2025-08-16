@@ -8,7 +8,7 @@ import axios, {AxiosProgressEvent} from "axios";
 import {useAppStore} from "./stores/app.ts";
 import Toast from './volt/Toast.vue';
 import Loader from "@/components/Loader.vue";
-import router from './router'
+import { useRouter } from "vue-router";
 import VideoPlayer from "./components/media/VideoPlayer.vue";
 const window2 = window;
 const isLoggedIn = ref(false);
@@ -20,7 +20,7 @@ const selectedFile = ref<File | null>(null);
 const uploadProgress = ref(0);
 const isUploading = ref(false);
 const toggleSidebar = () => (store.UIEvents.showMenuBar = !store.UIEvents.showMenuBar);
-
+const router = useRouter();
 onMounted(() => {
   if (localStorage.getItem("username")) {
     isLoggedIn.value = true;

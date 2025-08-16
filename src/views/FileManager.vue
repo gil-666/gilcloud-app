@@ -18,27 +18,34 @@
     </div>
 
     <div class="border-1 border-neutral-600 m-5 relative bottom-5 p-10 overflow-y-auto h-full max-h-11/12">
-      <DirectoryContent v-model:dir="currentDir" :key="currentDir" />
-
+      <Suspense>
+        <template #default>
+          <DirectoryContent v-model:dir="currentDir" :key="currentDir" />
+        </template>
+        <template #fallback>
+          <Loader/>
+        </template>
+      </Suspense>
 
     </div>
   </main>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { useAppStore } from "../stores/app.ts";
 import NewFolder from "@/components/filemanager/NewFolder.vue";
 import DirectoryContent from "@/components/filemanager/DirectoryContent.vue";
+import Loader from "../components/Loader.vue";
 
 const store = useAppStore();
 const newFolderVisible = ref(false);
 const currentDir = computed({
   get() {
-    return store.currentDir.replace(/^"|"$/g, "");
+    return store.currentDir?.replace(/^"|"$/g, "") || `./${store.userHomeDir}`;
   },
   set(value: string) {
-    const previous = store.currentDir.replace(/^"|"$/g, "");
+    const previous = store.currentDir?.replace(/^"|"$/g, "") || `./${store.userHomeDir}`;
     if (previous !== value) {
       navHistory.push(previous);
       store.setCurrentDir(value);

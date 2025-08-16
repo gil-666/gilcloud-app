@@ -20,6 +20,7 @@
         <div class="dot dot1"></div>
         <div class="dot dot2"></div>
       </div>
+      <p class="block">Loading...</p>
     </div>
   </template>
   

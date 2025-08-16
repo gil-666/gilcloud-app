@@ -13,7 +13,7 @@
             ".png"
         ]
     },
-    "music": {
+    "audio": {
         "icon": "pi pi-headphones",
         "extensions": [
             ".mp3",
