@@ -6,10 +6,10 @@
     <div class="m-5 relative bottom-5 overflow-y-auto h-full max-h-11/12 movies-view">
       <!-- <p class="text-lg text-left mb-5">Your movie collection will appear here.</p> -->
       <!-- Movie content will go here -->
-      <div class="grid xl:grid-cols-6 lg:grid-cols-4 md:grid-cols-4 sm:grid-cols-3 grid-cols-2 gap-4">
+      <div class="grid xl:grid-cols-6 lg:grid-cols-4 md:grid-cols-4 sm:grid-cols-3 grid-cols-2 gap-2">
         <div @click="playMovie(movie)" v-for="movie in movies" :key="movie.id"
-          class="bg-neutral-700 p-4 rounded-lg cursor-pointer hover:bg-neutral-600 transition">
-          <img :src="movie.cover" alt="Movie Thumbnail" class="w-full h-auto mb-4 rounded">
+          class=" p-2 rounded-lg cursor-pointer">
+          <img ref="movieCoverArtRef" :src="movie.cover" alt="Movie Thumbnail" class="cover-art w-full h-auto mb-4 rounded" @mousemove="(e)=>(handleMouseMove(e,e.currentTarget as HTMLImageElement))" @mouseleave="(e) => resetTransform(e.currentTarget as HTMLImageElement)">
           <h2 class="text-xl mb-2">{{ movie.title }}</h2>
           <!-- <p class="text-sm mb-4">{{ movie.description }}</p> -->
           <!-- <button @click="playMovie(movie)" class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded">Play</button> -->
@@ -25,8 +25,11 @@
 import { useAppStore } from '../stores/app';
 import { onMounted, Ref, ref } from 'vue';
 import { GetMovies } from '../service/movies';
+import { handleMouseMove,resetTransform } from '../util/anim';
 import VideoPlayer from '../components/media/VideoPlayer.vue';
 import { MovieStructure } from '../util/fileTypes';
+import { useApiUrl } from '../main';
+const movieCoverArtRef: Ref<HTMLImageElement | null>= ref(null)
 const store = useAppStore();
 const selectedMovie: Ref<MovieStructure | null> = ref(null);
 const rawMovies = await GetMovies();
@@ -44,11 +47,15 @@ function playMovie(movie: MovieStructure) {
 }
 function getAbsoluteHlsUrl(src: string): string {
   if (src.startsWith('http')) return src; // already absolute
-  return `${window.API_URL}${src}`;
+  return `${useApiUrl()}${src}`;
 }
 </script>
 
 <style scoped>
+.cover-art{
+  /* transition: transform 0.1s linear; */
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+}
 .movies-view {
   padding: 2rem;
 }

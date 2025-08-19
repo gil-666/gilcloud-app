@@ -16,9 +16,11 @@ export const createApp = ViteSSG(
 
     // Global API URL accessible in components via this.$apiUrl
     const apiUrl = import.meta.env.VITE_API_URL;
-    app.config.globalProperties.$apiUrl = apiUrl;
+    // app.config.globalProperties.$apiUrl = apiUrl;
 
-    // Only set window.API_URL on client
-    if (isClient) window.API_URL = apiUrl;
+    // Only set useApiUrl() on client
   }
 );
+export function useApiUrl(){
+  return import.meta.env.VITE_API_URL
+}

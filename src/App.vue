@@ -1,16 +1,17 @@
 <script setup lang="ts" xmlns="http://www.w3.org/1999/html">
-import {computed, onMounted, ref} from "vue";
+import { computed, onMounted, ref } from "vue";
 import Button from "./volt/Button.vue";
 import ProgressBar from "./volt/ProgressBar.vue";
-import {RouterView, RouterLink} from "vue-router";;
+import { RouterView, RouterLink } from "vue-router";;
 import UploadDialog from "./components/filemanager/UploadDialog.vue";
-import axios, {AxiosProgressEvent} from "axios";
-import {useAppStore} from "./stores/app.ts";
+import axios, { AxiosProgressEvent } from "axios";
+import { useAppStore } from "./stores/app.ts";
 import Toast from './volt/Toast.vue';
 import Loader from "@/components/Loader.vue";
 import { useRouter } from "vue-router";
 import VideoPlayer from "./components/media/VideoPlayer.vue";
-const window2 = window;
+import { useApiUrl } from "./main.ts";
+const window2 = typeof window;
 const isLoggedIn = ref(false);
 const store = useAppStore();;
 const storageCount = computed(() => store.storageCount);
@@ -27,13 +28,18 @@ onMounted(() => {
     updateStorageCount();
     setHomeDir();
 
-  }else{
-    router.push('/login')
+  } else {
+    router.push({
+      path: '/login',
+      query: {
+        redirect: router.currentRoute.value.fullPath
+      }
+    });
   }
 });
 
 async function updateStorageCount() {
-  const response = await axios.get(`${window.API_URL}/storage/${localStorage.getItem('username')}`);
+  const response = await axios.get(`${useApiUrl()}/storage/${localStorage.getItem('username')}`);
   store.setStorageCount(response.data);
 }
 
@@ -68,7 +74,7 @@ async function uploadFile(file: File) {
   isUploading.value = true;
 
   try {
-    await axios.post(`${window.API_URL}/upload`, formData, {
+    await axios.post(`${useApiUrl()}/upload`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
@@ -94,7 +100,7 @@ async function uploadFile(file: File) {
 </script>
 
 <template>
-<!--  <Login v-if="!isLoggedIn" @loginSuccess="isLoggedIn = true;setHomeDir"></Login>-->
+  <!--  <Login v-if="!isLoggedIn" @loginSuccess="isLoggedIn = true;setHomeDir"></Login>-->
   <main>
     <div class="header bg-neutral-900 w-full fixed z-90">
       <div class="header-content place-items-center p-4 flex">
@@ -107,32 +113,35 @@ async function uploadFile(file: File) {
           </div>
           <div class="text-logo transition-all duration-250 opacity-100 not-sm:opacity-0 ">
             <p class="text-2xl font-bold h-fit">GilCloud</p>
-<!--            <p class="bg-green-900 w-fit">Cloud Services</p>-->
+            <!--            <p class="bg-green-900 w-fit">Cloud Services</p>-->
           </div>
 
         </div>
-<!--        <Divider layout="vertical"></Divider>-->
+        <!--        <Divider layout="vertical"></Divider>-->
 
         <div class="logout-button absolute flex right-3 top-6">
           <input class="sr-only" type="file" name="bruh">
-          <p class="content-center mr-4 sm:block hidden">Hello, {{store.username}}!</p>
+          <p class="content-center mr-4 sm:block hidden">Hello, {{ store.username }}!</p>
           <Button @click="uploadVisible = !uploadVisible; console.log(uploadVisible)"
-                  class="upload-btn pi pi-upload mr-5"><p style="font-family: Inter,sans-serif">Upload</p></Button>
+            class="upload-btn pi pi-upload mr-5">
+            <p style="font-family: Inter,sans-serif">Upload</p>
+          </Button>
           <Button label="Log Out" @click="logOut"></Button>
         </div>
       </div>
     </div>
     <div class="flex relative h-screen">
       <div
-          class="side-bar h-full fixed lg:relative z-20 bg-neutral-900 min-w-40 max-w-50 text-center w-full flex-col transition-transform duration-300"
-          :class="store.UIEvents.showMenuBar ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'"
-      >
+        class="side-bar h-full fixed lg:relative z-20 bg-neutral-900 min-w-40 max-w-50 text-center w-full flex-col transition-transform duration-300"
+        :class="store.UIEvents.showMenuBar ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'">
         <div class="side-bar-inside mt-30 w-full ">
           <div class="user-label -mt-5 mb-2">
-            <p class="content-center not-sm:block hidden">Hello, {{store.username}}!</p>
+            <p class="content-center not-sm:block hidden">Hello, {{ store.username }}!</p>
           </div>
-          <router-link @click="toggleSidebar" to="/"><Button class="btn-sidebar w-full mb-5" label="Drive"></Button></router-link>
-          <router-link @click="toggleSidebar" to="/movies"><Button class="btn-sidebar w-full" label="Movies"></Button></router-link>
+          <router-link @click="toggleSidebar" to="/"><Button class="btn-sidebar w-full mb-5"
+              label="Drive"></Button></router-link>
+          <router-link @click="toggleSidebar" to="/movies"><Button class="btn-sidebar w-full"
+              label="Movies"></Button></router-link>
         </div>
         <div class="progress-bar mt-5 p-3 max-w-full bottom-10">
           <p class="storage-counter">{{ (storageCount.currentUsage / 1024).toFixed(2) }}GB of
@@ -141,10 +150,10 @@ async function uploadFile(file: File) {
         </div>
       </div>
       <div class="font-bold flex-col w-full mt-22">
-        <Toast/>
+        <Toast />
         <Suspense>
           <template #default>
-            <RouterView/>
+            <RouterView />
           </template>
           <template #fallback>
             <Loader />
@@ -155,20 +164,27 @@ async function uploadFile(file: File) {
     </div>
   </main>
 
-  <UploadDialog v-if="uploadVisible" @close="uploadVisible = false;window2.location.reload()" @file-selected="onSelectedFile" :progress="uploadProgress"></UploadDialog>
+  <UploadDialog v-if="uploadVisible" @close="uploadVisible = false; window2.location.reload()"
+    @file-selected="onSelectedFile" :progress="uploadProgress"></UploadDialog>
 
 </template>
 
 <style scoped>
-.text-logo{
-  @media not (width >= 41rem /* 640px */) { /*CUSTOM PORQUE SI NO FUNCIONA OPACITY ANIM*/
+.text-logo {
+  @media not (width >=41rem
+
+    /* 640px */
+  ) {
+    /*CUSTOM PORQUE SI NO FUNCIONA OPACITY ANIM*/
     opacity: 0%;
   }
 }
-.logo-img{
+
+.logo-img {
   transform: scale(120%);
   text-align: center;
 }
+
 .logo {
   text-align: center;
 }
@@ -183,7 +199,8 @@ Button:hover {
 }
 
 .btn-sidebar {
-  transition: all 0.5s ease; /* Apply the transition to the base state */
+  transition: all 0.5s ease;
+  /* Apply the transition to the base state */
   border: unset;
   border-radius: unset;
   background-color: #0d542b;
@@ -193,7 +210,4 @@ Button:hover {
   font-size: 14px;
 }
 </style>
-<style>
-
-
-</style>
+<style></style>

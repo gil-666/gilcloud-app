@@ -21,6 +21,7 @@
                 @delete="deleteFile(file.path)"
                 @download="downloadFile(file.path)"
                 @link-generate="generateLink(file.path)"
+                @link-generate-view="generateLinkView(file.path)"
             />
           </div>
           
@@ -36,6 +37,8 @@ import File from "../../components/filemanager/File.vue";
 import { useAppStore } from "../../stores/app.ts";
 import { useToast } from "primevue";
 import { FileStructure, getFileTypeString } from "../../util/fileTypes.ts";
+import {generateViewLink, extractRelativePath} from "../../util/linkGen.ts"
+import AudioPlayer from "../media/AudioPlayer.vue";
 
 const emit = defineEmits<{
   (e: "update:dir", dir: string): void;
@@ -56,32 +59,42 @@ const videoSource = ref('');
 
 //image viewer
 import ImageViewer from "../../components/media/ImageViewer.vue";
+import { useApiUrl } from "../../main.ts";
 const imageActive = ref(false);
 const imageSource: FileStructure | any = ref(null)
 
 //audio player
-import AudioPlayer from "../media/AudioPlayer.vue";
+
 const audioActive = ref(false);
 const audioSource: FileStructure | any = ref('');
+
 // helpers
-function extractRelativePath(fullPath: string, username: string): string {
-  const marker = `/user/${username}/`;
-  const normalized = fullPath.replace(/\\/g, "/"); // normalize slashes
-  const index = normalized.indexOf(marker);
-  if (index === -1) return ""; // username not found
-  return normalized.slice(index + marker.length);
-}
 
 function generateLink(filePath: string) {
   const username = localStorage.getItem("username");
   if (!username) return;
   const relativePath = extractRelativePath(filePath, username);
   const encodedPath = encodeURIComponent(relativePath);
-  const encodedLink = `${window.API_URL}/download/${username}/${encodedPath}`;
+  const encodedLink = `${useApiUrl()}/download/${username}/${encodedPath}`;
   try {
     navigator.clipboard.writeText(encodedLink);
     toast.add({
       detail: `${encodedLink}`,
+      summary: `Download link copied to clipboard`,
+      severity: "success",
+      life: 3000,
+    });
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+function generateLinkView(filePath: string) {
+  const link = generateViewLink(filePath)
+  try {
+    navigator.clipboard.writeText(link!);
+    toast.add({
+      detail: `${link}`,
       summary: `Download link copied to clipboard`,
       severity: "success",
       life: 3000,
@@ -96,16 +109,15 @@ async function downloadFile(filePath: string) {
   if (!username) return;
   const relativePath = extractRelativePath(filePath, username);
   const encodedPath = encodeURIComponent(relativePath);
-  window.open(`${window.API_URL}/download/${username}/${encodedPath}`);
+  window.open(`${useApiUrl()}/download/${username}/${encodedPath}`);
 }
-
 async function deleteFile(filePath: string) {
   const username = localStorage.getItem("username");
   if (!username) return;
   const relativePath = extractRelativePath(filePath, username);
   const encodedPath = encodeURIComponent(relativePath);
   try {
-    await axios.delete(`${window.API_URL}/delete/${username}/${encodedPath}`);
+    await axios.delete(`${useApiUrl()}/delete/${username}/${encodedPath}`);
     await loadDirectory(props.dir);
     toast.add({
       detail: `File ${encodedPath} was deleted successfully`,
@@ -127,14 +139,14 @@ async function changeDir(newDir: string) {
 
 // API helpers
 async function getFolders(dir: string) {
-  const response = await axios.get(`${window.API_URL}/folders`, {
+  const response = await axios.get(`${useApiUrl()}/folders`, {
     params: { dir },
   });
   return response.data;
 }
 
 async function getFiles(dir: string) {
-  const response = await axios.get(`${window.API_URL}/files`, {
+  const response = await axios.get(`${useApiUrl()}/files`, {
     params: { dir },
   });
   console.log(response.data);
@@ -143,7 +155,7 @@ async function getFiles(dir: string) {
 
 async function updateStorageCount() {
   const response = await axios.get(
-      `${window.API_URL}/storage/${localStorage.getItem("username")}`
+      `${useApiUrl()}/storage/${localStorage.getItem("username")}`
   );
   store.setStorageCount(response.data);
 }

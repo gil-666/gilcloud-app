@@ -1,5 +1,6 @@
 <template>
-    <div class="audio-player-container fixed inset-0 flex justify-center z-100">
+    <Loader v-if="!loaded" />
+    <div v-show="loaded" class="audio-player-container fixed inset-0 flex justify-center z-90">
         <i class="pi pi-times fixed right-4 top-4 cursor-pointer z-100" @click="$emit('close')"
             style="font-size: 30px"></i>
 
@@ -11,8 +12,8 @@
             </div>
 
             <div class="p-5 inner-audio place-items-center">
-                <audio :src="props.src.path" ref="audioPlayerRef" style="display: none" controlslist="nodownload"
-                    controls class="audio" />
+                <audio :src="props.src.path || props.link" ref="audioPlayerRef" style="display: none" controlslist="nodownload"
+                    controls class="audio" preload="auto" />
                 <img ref="albumArtRef" src="../../assets/logtrans.png" alt="Audio" class="album-art" @mousemove="(e)=>(handleMouseMove(e,albumArtRef))" @mouseleave="() => resetTransform(albumArtRef)"  />
                 <!-- progress -->
                 <div class="progress-bar-cont flex items-center space-x-2">
@@ -49,9 +50,12 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, Ref } from 'vue';
 import { handleMouseMove, resetTransform } from '../../util/anim';
+import Loader from '../Loader.vue';
+const loaded = ref(false);
 const emit = defineEmits<{ (e: 'close'): void }>()
 const props = defineProps({
     src: { type: Object, required: true },
+    link: { type: String, required: false },
 });
 const metadata = ref<any>(null);
 const audioPlayerRef = ref<HTMLAudioElement | null>(null);
@@ -99,16 +103,18 @@ const seekAudio = () => {
   }
 };
 onMounted(() => {
+  
   const audio = audioPlayerRef.value;
   if (!audio) return;
-
   audio.onloadedmetadata = () => {
     togglePlay()
+    loaded.value = true;
     duration.value = audio.duration;
     metadata.value = {
       duration: audio.duration,
       format: props.src.path.split(".").pop() || "unknown",
     };
+    
   };
 
   audio.onended = () => {

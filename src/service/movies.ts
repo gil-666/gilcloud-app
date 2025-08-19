@@ -1,7 +1,8 @@
 import axios from 'axios';
+import { useApiUrl } from '../main';
 
 export async function GetMovies() {
-    const response = await axios.get(`${window.API_URL}/movies`);
+    const response = await axios.get(`${useApiUrl()}/movies`);
     return response.data;
 }
 

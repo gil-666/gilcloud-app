@@ -1,8 +1,8 @@
 import { Ref } from "vue";
-const handleMouseMove = (e: MouseEvent, element: HTMLImageElement | null) => {
+const handleMouseMove = (e: MouseEvent, element: HTMLImageElement | null) => { //3D OBJECT HOVER EFFECT
   if (!element) return;
-
-  const rect = element?.getBoundingClientRect();
+  element.style.transition = "none";
+  const rect = element.getBoundingClientRect();
   const x = e.clientX - rect!.left; // cursor X within element
   const y = e.clientY - rect!.top;  // cursor Y within element
 
@@ -10,15 +10,16 @@ const handleMouseMove = (e: MouseEvent, element: HTMLImageElement | null) => {
   const centerX = x / rect!.width - 0.5;
   const centerY = y / rect!.height - 0.5;
 
-  const rotateX = centerY * -30; // tilt strength
-  const rotateY = centerX * 30;
+  const rotateX = centerY * -35; // tilt strength
+  const rotateY = centerX * 35;
 
-  element!.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+  element.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
 };
 
 function resetTransform(element: HTMLImageElement | null) {
   if (element) {
-    element!.style.transform = "perspective(1000px) rotateX(0) rotateY(0)";
+    element.style.transition = "transform 0.3s ease";
+    element.style.transform = "perspective(1000px) rotateX(0) rotateY(0)";
   }
 };
 export { handleMouseMove, resetTransform };

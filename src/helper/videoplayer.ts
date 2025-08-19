@@ -11,14 +11,15 @@ interface QualityLevel {
     enabled: boolean;
 }
 
-function detectHls(src: string) {
+function detectHls(src: string | undefined) {
     // Simple detection for .m3u8 extension
-    return src.toLowerCase().endsWith('.m3u8')
+    
+    return src?.toLowerCase().endsWith('.m3u8')
 }
 
-function detectMaster(src: string) {
+function detectMaster(src: string | undefined) {
     // If filename contains 'master.m3u8'
-    return src.toLowerCase().includes('master.m3u8')
+    return src?.toLowerCase().includes('master.m3u8')
 }
 
 function updateStreamInfo(player: any, metadata: StreamMetadata): void {

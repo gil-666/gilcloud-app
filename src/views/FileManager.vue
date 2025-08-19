@@ -91,7 +91,7 @@ function formatDirText(text: string, getUncut = false) {
 async function createFolder(foldername: string) {
   // The DirectoryContent will react to currentDir change automatically via v-model
   // This is just for API call; mimic original behavior so NewFolder works at root of currentDir
-  await fetch(`${window.API_URL}/create_folder`, {
+  await fetch(`${useApiUrl()}/create_folder`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

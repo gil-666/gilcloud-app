@@ -3,6 +3,7 @@ import {ref} from "vue"
 import axios from "axios"
 import {useAppStore} from "../stores/app.ts";
 import { useRouter } from "vue-router";
+import { useApiUrl } from "../main.ts";
 const emit = defineEmits(["loginSuccess"])
 // Reactive state
 const router = useRouter();
@@ -28,7 +29,7 @@ const handleSubmit = async () => {
   }
 
   try {
-    const url = `${window.API_URL}`.concat(isLogin.value ? "/login" : "/register")
+    const url = `${useApiUrl()}`.concat(isLogin.value ? "/login" : "/register")
     console.log(url)
     const response = await axios.post(url, {
       username: username.value,
@@ -54,7 +55,7 @@ const handleSubmit = async () => {
       console.log("home dir set: "+store.userHomeDir)
       alert("Login successful!")
       store.setIsLoggedIn(true)
-      await router.push('/')
+      await router.push(router.currentRoute.value.query.redirect?.toString() || '/');
       emit("loginSuccess")
     } else {
       alert("Registration successful! You can now log in.")

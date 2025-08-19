@@ -1,12 +1,42 @@
-// src/router/index.ts
-import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router'
-
+// link/router/index.ts
+import { createRouter, createWebHistory, createMemoryHistory, RouteRecordRaw } from 'vue-router'
+import { useApiUrl } from '../main';
+const isServer = typeof window === 'undefined';
 const routes: Array<RouteRecordRaw> = [
   {
     path: '/',
     name: 'home',
     component: () => import('../views/FileManager.vue'),
     meta: { title: 'GilCloud | Drive' },
+  },
+  {
+    path: '/view',
+    name: 'view',
+    children: [
+      {
+        path: 'photo',
+        name: 'photo',
+        component: () => import('../components/media/ImageViewer.vue'),
+        props: route => ({
+          link: route.query.link ? `${useApiUrl()}/download/${route.query.link}` : null
+        })
+      },
+      {
+        path: 'video',
+        name: 'video',
+        component: () => import('../components/media/VideoPlayer.vue'),
+        props: route => ({
+          link: route.query.link ? `${useApiUrl()}/download/${route.query.link}` : null
+        })
+      },
+      {
+        path: 'audio',
+        name: 'audio',
+        component: () => import('../components/media/AudioPlayer.vue'),
+        props: route => ({
+          link: route.query.link ? `${useApiUrl()}/download/${route.query.link}` : null
+        })
+      }]
   },
   {
     path: '/movies',
@@ -23,7 +53,7 @@ const routes: Array<RouteRecordRaw> = [
 ]
 
 export const router = createRouter({
-  history: createWebHistory(import.meta.env.BASE_URL),
+  history: isServer ? createMemoryHistory() : createWebHistory(),
   routes,
 })
 

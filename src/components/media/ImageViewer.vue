@@ -1,17 +1,18 @@
 <template>
-    <div class="photo-player-container fixed inset-0 flex justify-center z-100">
-        <i class="pi pi-times fixed right-4 top-4 cursor-pointer z-100" @click="$emit('close')"
+    <Loader v-if="!loaded" />
+    <div v-else class="photo-player-container fixed text-center inset-0 flex justify-center z-90">
+        <i v-if="!props.link" class="pi pi-times fixed right-4 top-4 cursor-pointer z-90" @click="$emit('close')"
             style="font-size: 30px"></i>
 
-        <div class="cont p-5 relative h-screen">
+        <div :class="props.link ? 'w-full cont-view' : 'cont'" class="p-5 relative h-screen">
             <div class="title mt-8">
                 <h1 class="text-3xl max-w-full break-all">
-                    {{ props.src.name || 'Image' }}
+                    {{ props.src?.name || 'Image' }}
                 </h1>
             </div>
 
             <div class="p-5 inner-photo">
-                <img :src="props.src.path" alt="Image" class="image" />
+                <img :src="props.src?.path || props.link" alt="Image" class="image" />
             </div>
 
             <div v-if="metadata" class="photo-details mt-5">
@@ -32,16 +33,20 @@
 </template>
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
+import Loader from '../Loader.vue';
 const emit = defineEmits<{ (e: 'close'): void }>()
+const loaded = ref(false);
 const props = defineProps({
-    src: { type: Object, required: true },
+    src: { type: Object, required: false },
     title: { type: String, required: false },
+    link: { type: String, required: false },
 })
 const metadata = ref<any>(null)
 onMounted(() => {
     const img = new Image();
-    img.src = props.src.path;
+    img.src = props.src?.path || props.link;
     img.onload = async () => {
+        loaded.value = true;
         metadata.value = {
             width: img.width,
             height: img.height,
@@ -59,6 +64,12 @@ onMounted(() => {
 }
 .cont {
     max-width: 900px;
+    background-color: rgb(41, 41, 41);
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.cont-view {
     background-color: rgb(41, 41, 41);
     overflow-y: auto;
     overflow-x: hidden;
