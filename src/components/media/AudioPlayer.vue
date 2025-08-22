@@ -36,15 +36,15 @@
         </div>
 
         <i :class="isPlaying ? 'pi pi-pause' : 'pi pi-play'" class="p-2 play-button cursor m-5" @click="togglePlay"></i>
-        <div v-if="metadata" class="audio-details mt-5">
+        <div v-if="metadata" class="audio-details mt-5 w-fit">
           <div class="relative ">
             <p class="text-2xl">audio details:</p>
-            <div class="details ">
+            <div class="details text-center">
               <!-- <p class="text-sm">
                     Uploaded by:5
                     {{ props.src.slice(props.src.indexOf("user/") + 5, props.src.lastIndexOf("/")) }}
                 </p> -->
-              <p class="text-lg" v-if="metadata.album">
+              <p class="text-lg break-after-all text-center" v-if="metadata.album">
                 Album: {{ metadata.album }}
               </p>
               <p class="text-lg" v-if="metadata.genre">
@@ -58,7 +58,7 @@
                         audio bitrate: {{ metadata.bitrate }} kbps
                     </p> -->
                     <br>
-              <div class="flex grid-cols-2 gap-2">
+              <div class="block grid-cols-2 gap-2 place-items-center">
                 <p class="text-lg">
                   Length: {{ Math.floor(duration / 60)
                     +
@@ -79,36 +79,72 @@
 </template>
 <script setup lang="ts">
 import { useHead } from '@unhead/vue'
+import { useRoute } from 'vue-router';
+const metadata = ref<any>(null);
+const fileName = ref('')
+const route = useRoute()
 useHead({
-  title: 'GilCloud | Audio Player',
+  title: computed(() =>
+    metadata.value?.title
+      ? `${metadata.value.title} - ${metadata.value.artist || 'Unknown Artist'} | GilCloud`
+      : `GilCloud | 'Audio Player'`
+  ),
   meta: [
-    { name: 'description', content: 'play music o algo asi' },
-    { property: 'og:title', content: 'GilCloud | Audio Player' },
-    { property: 'og:description', content: 'Stream your favorite music directly from GilCloud.' },
-    { property: 'og:type', content: 'website' }, // optional preview image
+    {
+      name: 'description',
+      content: computed(() =>
+        metadata.value?.album
+          ? `Listen to "${metadata.value.title}" from the album "${metadata.value.album}".`
+          : 'Stream your favorite music directly from GilCloud.'
+      )
+    },
+    {
+      property: 'og:title',
+      content: computed(() =>
+        metadata.value?.title || 'GilCloud | Audio Player'
+      )
+    },
+    {
+      property: 'og:description',
+      content: computed(() =>
+        metadata.value?.artist
+          ? `Now playing: ${metadata.value.title} by ${metadata.value.artist}`
+          : 'Play music on GilCloud.'
+      )
+    },
+    { property: 'og:type', content: 'music.song' },
+    {
+      property: 'og:image',
+      content: computed(() =>
+        metadata.value?.picture || ''
+      )
+    }
   ]
 })
-import { ref, onMounted, onUnmounted, Ref, watch, computed } from 'vue';
+
+import { ref, onMounted, onUnmounted, Ref, watch, computed, onServerPrefetch } from 'vue';
 import { albumArtOnPause, albumArtOnPlay, applyGlow, handleMouseMove, resetTransform } from '../../util/anim';
 import Loader from '../Loader.vue';
 import { readTrackTags } from '../../helper/audioplayer';
 import { generateLink } from '../../util/linkGen';
 import { format } from 'path';
 import BannerLink from '../ui/BannerLink.vue';
+import { useApiUrl } from '../../main';
+
 const loaded = ref(false);
 const emit = defineEmits<{ (e: 'close'): void }>()
 const props = defineProps({
   src: { type: Object, required: false },
   link: { type: String, required: false },
 });
-const metadata = ref<any>(null);
+
 const audioPlayerRef = ref<HTMLAudioElement | null>(null);
 
 const albumArtRef = ref<HTMLImageElement | null>(null);
 const albumArtImg: Ref<string | null> = ref(null);
 const isPlaying = ref(false);
 const currentTime = ref(0);
-const fileName = ref('')
+
 const duration = ref(0);
 const audioFormat = ref('')
 const sliderTime = ref(0);
@@ -203,7 +239,18 @@ function onSliderChange(e: Event) {
     audioPlayerRef.value.currentTime = sliderTime.value;
   }
 }
-
+onServerPrefetch(async () => {
+  const link = route.query.link as string
+  if (link) {
+    const res = await fetch(
+      `${useApiUrl()}/music_metadata?file=${encodeURIComponent(link)}`
+    )
+    if (res.ok) {
+      metadata.value = await res.json()
+      console.log('cum', res.json())
+    }
+  }
+})
 async function loadMetadata() {
   const source = props.link || props.src?.path
   if (!source) return
@@ -297,7 +344,7 @@ onUnmounted(() => {
 }
 
 .cont-w-normal {
-  width: 800px;
+  width: 600px;
 }
 
 .inner-audio {

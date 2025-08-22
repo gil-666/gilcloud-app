@@ -41,8 +41,8 @@ const user = ref<{ name: string } | null>(null);
 const router = useRouter();
 
 // Computed helpers
-const isLoggedIn = computed(() => getLocalStorageItem('username','') !== null);
-const userName = computed(() => getLocalStorageItem('username','') ?? "");
+const isLoggedIn = computed(() => getLocalStorageItem('username',null) !== null);
+const userName = computed(() => getLocalStorageItem('username',null) ?? "");
 
 // Methods
 const goLogin = () => {
