@@ -32,6 +32,17 @@
     </div>
 </template>
 <script setup lang="ts">
+import {useHead} from '@unhead/vue'
+useHead({
+  title: 'GilCloud | Image',
+  meta: [
+    { name: 'description', content: 'ooooooo' },
+    { property: 'og:title', content: 'GilCloud | Image' },
+    { property: 'og:description', content: 'View your photos in GilCloud.' },
+    { property: 'og:type', content: 'website' },
+    
+  ]
+})
 import { ref, onMounted } from 'vue';
 import Loader from '../Loader.vue';
 import { generateLink } from '../../util/linkGen';

@@ -1,4 +1,11 @@
 // link/router/index.ts
+declare module 'vue-router' {
+  interface RouteMeta {
+    title?: string
+    description?: string
+    public?: boolean
+  }
+}
 import { createRouter, createWebHistory, createMemoryHistory, RouteRecordRaw } from 'vue-router'
 import { useApiUrl } from '../main';
 const isServer = typeof window === 'undefined';
@@ -61,8 +68,5 @@ export const router = createRouter({
 })
 
 // Optional: dynamic title based on route meta
-router.beforeEach((to, from, next) => {
-  document.title = to.meta.title as string || 'GilCloud'
-  next()
-})
+
 export default router

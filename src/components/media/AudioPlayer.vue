@@ -72,6 +72,16 @@
   </div>
 </template>
 <script setup lang="ts">
+import {useHead} from '@unhead/vue'
+useHead({
+  title: 'GilCloud | Audio Player',
+  meta: [
+    { name: 'description', content: 'play music o algo asi' },
+    { property: 'og:title', content: 'GilCloud | Audio Player' },
+    { property: 'og:description', content: 'Stream your favorite music directly from GilCloud.' },
+    { property: 'og:type', content: 'website' }, // optional preview image
+  ]
+})
 import { ref, onMounted, onUnmounted, Ref, watch, computed } from 'vue';
 import { albumArtOnPause, albumArtOnPlay, applyGlow, handleMouseMove, resetTransform } from '../../util/anim';
 import Loader from '../Loader.vue';
@@ -257,6 +267,7 @@ onMounted(() => {
   audio.onended = () => {
     isPlaying.value = false;
     currentTime.value = 0;
+    albumArtOnPause(albumArtRef.value);
   };
 
   audio.onerror = () => {

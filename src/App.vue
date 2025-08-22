@@ -23,6 +23,7 @@ const isUploading = ref(false);
 const toggleSidebar = () => (store.UIEvents.showMenuBar = !store.UIEvents.showMenuBar);
 const router = useRouter();
 const route = useRoute();
+
 onMounted(() => {
   const isPublic = route.meta.public ?? false;
 
