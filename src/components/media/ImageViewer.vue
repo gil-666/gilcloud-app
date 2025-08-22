@@ -12,7 +12,7 @@
             </div>
 
             <div class="p-5 inner-photo">
-                <img :src="props.src?.path || props.link" alt="Image" class="image" />
+                <img :src="props.src?.path ? generateLink(props.src?.path) : props.link" alt="Image" class="image" />
             </div>
 
             <div v-if="metadata" class="photo-details mt-5">
@@ -34,6 +34,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import Loader from '../Loader.vue';
+import { generateLink } from '../../util/linkGen';
 const emit = defineEmits<{ (e: 'close'): void }>()
 const loaded = ref(false);
 const props = defineProps({
@@ -44,7 +45,7 @@ const props = defineProps({
 const metadata = ref<any>(null)
 onMounted(() => {
     const img = new Image();
-    img.src = props.src?.path || props.link;
+    img.src = props.src?.path ? String(generateLink(props.src.path)) : String(props.link);
     img.onload = async () => {
         loaded.value = true;
         metadata.value = {

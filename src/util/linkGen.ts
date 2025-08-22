@@ -1,3 +1,4 @@
+import { useApiUrl } from "../main";
 import { getFileTypeString } from "./fileTypes"
 
 function extractRelativePath(fullPath: string, username: string): string {
@@ -29,8 +30,17 @@ function generateViewLink(filepath:string){
             break;
     }
 }
+function generateLink(filePath: string | any) {
+  const username = localStorage.getItem("username");
+  if (!username) return;
+  const relativePath = extractRelativePath(filePath, username);
+  const encodedPath = encodeURIComponent(relativePath);
+  const encodedLink = `${useApiUrl()}/download/${username}/${encodedPath}`;
+  return encodedLink
+}
 export{
     generateViewLink,
     generateRelativePathString,
-    extractRelativePath
+    extractRelativePath,
+    generateLink
 }

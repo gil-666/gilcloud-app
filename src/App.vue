@@ -2,7 +2,7 @@
 import { computed, onMounted, ref } from "vue";
 import Button from "./volt/Button.vue";
 import ProgressBar from "./volt/ProgressBar.vue";
-import { RouterView, RouterLink } from "vue-router";;
+import { RouterView, RouterLink, useRoute } from "vue-router";;
 import UploadDialog from "./components/filemanager/UploadDialog.vue";
 import axios, { AxiosProgressEvent } from "axios";
 import { useAppStore } from "./stores/app.ts";
@@ -22,19 +22,27 @@ const uploadProgress = ref(0);
 const isUploading = ref(false);
 const toggleSidebar = () => (store.UIEvents.showMenuBar = !store.UIEvents.showMenuBar);
 const router = useRouter();
+const route = useRoute();
 onMounted(() => {
-  if (localStorage.getItem("username")) {
-    isLoggedIn.value = true;
-    updateStorageCount();
-    setHomeDir();
+  const isPublic = route.meta.public ?? false;
 
+  if (!isPublic) {
+    if (localStorage.getItem("username")) {
+      isLoggedIn.value = true;
+      updateStorageCount();
+      setHomeDir();
+    } else {
+      router.push({
+        path: '/login',
+        query: { redirect: router.currentRoute.value.fullPath }
+      });
+    }
   } else {
-    router.push({
-      path: '/login',
-      query: {
-        redirect: router.currentRoute.value.fullPath
-      }
-    });
+    if (localStorage.getItem("username")) {
+      isLoggedIn.value = true;
+      updateStorageCount();
+      setHomeDir();
+    }
   }
 });
 
@@ -164,7 +172,7 @@ async function uploadFile(file: File) {
     </div>
   </main>
 
-  <UploadDialog v-if="uploadVisible" @close="uploadVisible = false; window2.location.reload()"
+  <UploadDialog v-if="uploadVisible" @close="uploadVisible = false; (typeof window2 as any).location.reload()"
     @file-selected="onSelectedFile" :progress="uploadProgress"></UploadDialog>
 
 </template>

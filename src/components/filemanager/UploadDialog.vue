@@ -5,6 +5,7 @@ import ProgressBar from "../../volt/ProgressBar.vue";
 
 const emit = defineEmits<{
   (event: 'close'): void;
+  (event: 'file-selected', file: File): void;
   (event: 'file-selected', file: File, currentDir: String): void;
 }>();
 const props = defineProps({
@@ -46,7 +47,7 @@ onMounted(async () => {
         console.log('User dropped:', paths);
         isFileSelected.value = true;
         droppedFilePath.value = paths[0]; // store for preview
-        emit('file-selected', paths[0]);  // emit to parent
+        // emit('file-selected', paths[0]);  // emit to parent
       }
     }
   });
@@ -75,8 +76,8 @@ onUnmounted(() => {
             drag and drop</p>
           <p class="text-xs text-gray-500 dark:text-gray-400">SVG, PNG, JPG or GIF (MAX. 800x400px)</p>
           <br>
-          <p class="text-sm" v-if="isFileSelected && props.progress < 1">Upload starting, please wait...</p>
-          <p class="text-sm" v-if="props.progress < 100 && props.progress > 1">Uploading:</p>
+          <p class="text-sm" v-if="isFileSelected && props.progress && props.progress < 1">Upload starting, please wait...</p>
+          <p class="text-sm" v-if="props.progress &&  props.progress < 100 && props.progress > 1">Uploading:</p>
           <p class="text-sm" v-if="props.progress == 100">Upload completed!</p>
           <ProgressBar v-if="isFileSelected" class="mt-2 border-1 border-neutral-500 w-full" :show-value="true"
                        :value="Number(props.progress)"></ProgressBar>

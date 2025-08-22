@@ -19,7 +19,8 @@ const routes: Array<RouteRecordRaw> = [
         component: () => import('../components/media/ImageViewer.vue'),
         props: route => ({
           link: route.query.link ? `${useApiUrl()}/download/${route.query.link}` : null
-        })
+        }),
+        meta: { title: 'GilCloud | Image', public: true },
       },
       {
         path: 'video',
@@ -27,7 +28,8 @@ const routes: Array<RouteRecordRaw> = [
         component: () => import('../components/media/VideoPlayer.vue'),
         props: route => ({
           link: route.query.link ? `${useApiUrl()}/download/${route.query.link}` : null
-        })
+        }),
+        meta: { title: 'GilCloud | Video', public: true },
       },
       {
         path: 'audio',
@@ -35,7 +37,8 @@ const routes: Array<RouteRecordRaw> = [
         component: () => import('../components/media/AudioPlayer.vue'),
         props: route => ({
           link: route.query.link ? `${useApiUrl()}/download/${route.query.link}` : null
-        })
+        }),
+        meta: { title: 'GilCloud | Audio', public: true },
       }]
   },
   {

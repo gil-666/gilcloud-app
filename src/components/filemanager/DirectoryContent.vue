@@ -1,31 +1,20 @@
 <template>
-        <div>
-            <AudioPlayer @close="audioActive = false" v-if="audioActive" :src="audioSource"></AudioPlayer>
-            <ImageViewer @close="imageActive = false" v-if="imageActive" :src="imageSource"></ImageViewer>
-            <VideoPlayer @close="videoActive = false" v-if="videoActive" :src="videoSource"></VideoPlayer>
-          <p v-if="isDirEmpty()" class="font-light">No items to show</p>
-          <!-- <p class="font-light" id="load">Loading</p> -->
-          <div v-if="!isDirEmpty()" class="file-list gap-10 grid 2xl:grid-cols-8 lg:grid-cols-4 grid-cols-2 justify-items-center">
-            <Folder
-                v-for="folder in folders"
-                :key="folder.path"
-                v-bind="folder"
-                @delete="deleteFile(folder.path)"
-                @click="changeDir(folder.path)"
-            />
-            <File
-                v-for="file in files"
-                :key="file.path"
-                v-bind="file"
-                @click="performFileAction(file)"
-                @delete="deleteFile(file.path)"
-                @download="downloadFile(file.path)"
-                @link-generate="generateLink(file.path)"
-                @link-generate-view="generateLinkView(file.path)"
-            />
-          </div>
-          
-        </div>
+  <div>
+    <AudioPlayer @close="audioActive = false" v-if="audioActive" :src="audioSource"></AudioPlayer>
+    <ImageViewer @close="imageActive = false" v-if="imageActive" :src="imageSource"></ImageViewer>
+    <VideoPlayer @close="videoActive = false" v-if="videoActive" :src="videoSource"></VideoPlayer>
+    <p v-if="isDirEmpty()" class="font-light">No items to show</p>
+    <!-- <p class="font-light" id="load">Loading</p> -->
+    <div v-if="!isDirEmpty()"
+      class="file-list gap-10 grid 2xl:grid-cols-8 lg:grid-cols-4 grid-cols-2 justify-items-center">
+      <Folder v-for="folder in folders" :key="folder.path" v-bind="folder" @delete="deleteFile(folder.path)"
+        @click="changeDir(folder.path)" />
+      <File v-for="file in files" :key="file.path" v-bind="file" @click="performFileAction(file)"
+        @delete="deleteFile(file.path)" @download="downloadFile(file.path)" @link-generate="onGenerateLink(file.path)"
+        @link-generate-view="generateLinkView(file.path)" />
+    </div>
+
+  </div>
 
 </template>
 
@@ -37,7 +26,7 @@ import File from "../../components/filemanager/File.vue";
 import { useAppStore } from "../../stores/app.ts";
 import { useToast } from "primevue";
 import { FileStructure, getFileTypeString } from "../../util/fileTypes.ts";
-import {generateViewLink, extractRelativePath} from "../../util/linkGen.ts"
+import { generateViewLink, extractRelativePath, generateLink } from "../../util/linkGen.ts"
 import AudioPlayer from "../media/AudioPlayer.vue";
 
 const emit = defineEmits<{
@@ -69,26 +58,23 @@ const audioActive = ref(false);
 const audioSource: FileStructure | any = ref('');
 
 // helpers
-
-function generateLink(filePath: string) {
-  const username = localStorage.getItem("username");
-  if (!username) return;
-  const relativePath = extractRelativePath(filePath, username);
-  const encodedPath = encodeURIComponent(relativePath);
-  const encodedLink = `${useApiUrl()}/download/${username}/${encodedPath}`;
-  try {
-    navigator.clipboard.writeText(encodedLink);
-    toast.add({
-      detail: `${encodedLink}`,
-      summary: `Download link copied to clipboard`,
-      severity: "success",
-      life: 3000,
-    });
-  } catch (e) {
-    console.error(e);
+function onGenerateLink(filePath: string) {
+  const link = generateLink(filePath)
+  if (link) {
+    try {
+      navigator.clipboard.writeText(link);
+      toast.add({
+        detail: `${link}`,
+        summary: `Download link copied to clipboard`,
+        severity: "success",
+        life: 3000,
+      });
+    } catch (e) {
+      console.error(e);
+    }
   }
-}
 
+}
 function generateLinkView(filePath: string) {
   const link = generateViewLink(filePath)
   try {
@@ -155,7 +141,7 @@ async function getFiles(dir: string) {
 
 async function updateStorageCount() {
   const response = await axios.get(
-      `${useApiUrl()}/storage/${localStorage.getItem("username")}`
+    `${useApiUrl()}/storage/${localStorage.getItem("username")}`
   );
   store.setStorageCount(response.data);
 }
@@ -190,8 +176,8 @@ function loadImage(file: FileStructure) {
   imageActive.value = true;
 }
 
-function loadAudio(file: FileStructure) {
-  audioSource.value = file;
+function loadAudio(filePath: FileStructure) {
+  audioSource.value = filePath;
   audioActive.value = true;
 }
 

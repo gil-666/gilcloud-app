@@ -10,15 +10,26 @@ const host = process.env.TAURI_DEV_HOST;
 
 // https://vitejs.dev/config/
 export default defineConfig(async () => ({
-  plugins: [vue(),tailwindcss()],
-    optimizeDeps: {
-      exclude: ['lightningcss']},
-    resolve: {
-        alias: {
-            '@': path.resolve(__dirname, './src'),
-            'lightningcss/node': 'lightningcss'
-        },
+  plugins: [vue(), tailwindcss()],
+  build: {
+    commonjsOptions: {
+      include: [
+        /node_modules/,            // include all node_modules (optional)
+        /node_modules\/video\.js/,
+        /videojs-hls-quality-selector/  // specifically include video.js
+      ],
     },
+  },
+  optimizeDeps: {
+    include: ['video.js', 'videojs-hls-quality-selector'],
+    exclude: ['lightningcss']
+  },
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src'),
+      'lightningcss/node': 'lightningcss'
+    },
+  },
 
   // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
   //
@@ -29,17 +40,17 @@ export default defineConfig(async () => ({
     port: 1420,
     strictPort: true,
     host: host || false,
-    allowedHosts: ['gilcloud.hanekawa.online','local.gilcloud.hanekawa.online'],
+    allowedHosts: ['gilcloud.hanekawa.online', 'local.gilcloud.hanekawa.online'],
     hmr: host
       ? {
-          protocol: "ws",
-          host,
-          port: 1421,
-        }
+        protocol: "ws",
+        host,
+        port: 1421,
+      }
       : undefined,
     watch: {
       // 3. tell vite to ignore watching `src-tauri`
-      ignored: ["**/src-tauri/**",'**/data/**'],
+      ignored: ["**/src-tauri/**", '**/data/**'],
     },
   },
 }));

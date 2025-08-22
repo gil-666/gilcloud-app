@@ -1,72 +1,75 @@
 <template>
     <Loader v-if="!loaded" />
-        <div ref="videoPlayerContainerRef" class="video-player-container fixed inset-0 flex justify-center z-100">
-            <i v-if="!props.link" class="pi pi-times fixed right-4 top-4 cursor-pointer z-100" @click="$emit('close')"
-                style="font-size: 30px"></i>
-                <div :class="props.link ? 'w-full' : ''" class="cont relative h-screen place-items-center text-center">
-                    <div class="w-full p-2 title mt-10 w-20">
-                        <h1 v-if="!isHls && !props.link" class="text-3xl">
-                            Now playing:
-                            {{ videotitle }}
-                        </h1>
-                        <h1 v-else class="text-3xl">
-                            Now playing:
-                            {{ props.title || videotitle || 'Video' }}
-                        </h1>
-                    </div>
+    <div ref="videoPlayerContainerRef" class="video-player-container fixed inset-0 flex justify-center z-100">
+        <i v-if="!props.link" class="pi pi-times fixed right-4 top-4 cursor-pointer z-100" @click="$emit('close')"
+            style="font-size: 30px"></i>
+        <div :class="props.link ? 'w-full cont' : 'cont cont-w-normal'"
+            class="relative h-screen place-items-center text-center">
+            <div class="w-full p-2 title mt-10 w-20">
+                <h1 v-if="!isHls && !props.link" class="text-3xl">
+                    Now playing:
+                    {{ videotitle }}
+                </h1>
+                <h1 v-else class="text-3xl">
+                    Now playing:
+                    {{ props.title || videotitle || 'Video' }}
+                </h1>
+            </div>
 
-                    <div class="inner-video">
-                        <video ref="videoPlayerRef" class="video-js vjs-default-skin" preload="auto"></video>
-                    </div>
+            <div class="inner-video">
+                <video ref="videoPlayerRef" class="video-js vjs-default-skin" preload="auto"></video>
+            </div>
 
-                    <div v-if="metadata" class="video-details mt-5">
-                        <p class="text-lg">Video details:</p>
-                        <p class="text-sm" v-if="!isHls && !props.link">
-                            Uploaded by:
-                            {{ props.src?.slice(props.src.indexOf("user/") + 5, props.src.lastIndexOf("/")) }}
-                        </p>
-                        <p class="text-sm">
-                            Resolution: {{ metadata.width }}x{{ metadata.height }}
-                        </p>
-                        <p class="text-sm">
-                            Duration: {{ (metadata.duration / 60).toFixed(2) }} minutes
-                        </p>
-                        <br></br>
-                        <div v-if="audioTracks.length">
-                            <p class="text-lg">Audio Tracks:</p>
-                            <ul>
-                                <li v-for="(track, idx) in audioTracks" :key="idx">
-                                    {{ track.label || 'Track ' + (idx + 1) }} ({{ track.language || 'unknown' }})
-                                </li>
-                            </ul>
-                        </div>
-                        <br>
-                        <div v-if="subtitleTracks.length">
-                            <p class="text-lg">Subtitle Tracks:</p>
-                            <ul>
-                                <li v-for="(track, idx) in subtitleTracks" :key="idx">
-                                    {{ track.label || 'Track ' + (idx + 1) }} ({{ track.language || 'unknown' }}) <span
-                                        v-if="track.mode === 'showing'">(showing)</span>
-                                </li>
-                            </ul>
-                        </div>
-                    </div>
+            <div v-if="metadata" class="video-details mt-5">
+                <p class="text-lg">Video details:</p>
+                <p class="text-sm" v-if="!isHls && !props.link">
+                    Uploaded by:
+                    {{ props.src?.slice(props.src.indexOf("user/") + 5, props.src.lastIndexOf("/")) }}
+                </p>
+                <p class="text-sm">
+                    Resolution: {{ metadata.width }}x{{ metadata.height }}
+                </p>
+                <p class="text-sm">
+                    Duration: {{ (metadata.duration / 60).toFixed(2) }} minutes
+                </p>
+                <br></br>
+                <div v-if="audioTracks.length">
+                    <p class="text-lg">Audio Tracks:</p>
+                    <ul>
+                        <li v-for="(track, idx) in audioTracks" :key="idx">
+                            {{ track.label || 'Track ' + (idx + 1) }} ({{ track.language || 'unknown' }})
+                        </li>
+                    </ul>
+                </div>
+                <br>
+                <div v-if="subtitleTracks.length">
+                    <p class="text-lg">Subtitle Tracks:</p>
+                    <ul>
+                        <li v-for="(track, idx) in subtitleTracks" :key="idx">
+                            {{ track.label || 'Track ' + (idx + 1) }} ({{ track.language || 'unknown' }}) <span
+                                v-if="track.mode === 'showing'">(showing)</span>
+                        </li>
+                    </ul>
                 </div>
             </div>
+        </div>
+    </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, Ref, ref} from 'vue'
+import { onMounted, onUnmounted, Ref, ref } from 'vue'
 import { detectHls, detectMaster, updateStreamInfo, forceVhsQuality } from '../../helper/videoplayer.ts'
-import videojs from 'video.js'
+// import videojs from 'video.js'
 // videojs.log.level('debug');
-import 'video.js/dist/video-js.css'
+// import 'video.js/dist/video-js.css'
 // import 'videojs-contrib-quality-levels'
-import 'videojs-hls-quality-selector/dist/videojs-hls-quality-selector.js'
-import 'videojs-hls-quality-selector/dist/videojs-hls-quality-selector.css'
+
+
 import { useToast } from 'primevue'
 import Loader from '../Loader.vue'
-import Player from 'video.js/dist/types/player'
+import { generateLink } from '../../util/linkGen.ts';
+const context = new (window.AudioContext || (window as any).webkitAudioContext)();
+const gainNode = context.createGain();
 const loaded = ref(false)
 const userLocale = navigator.language || 'en';
 const languageDisplay = new Intl.DisplayNames([userLocale], { type: 'language' });
@@ -98,6 +101,12 @@ const subtitleTracks = ref<any[]>([])
 onMounted(() => {
 
     if (!videoPlayerRef.value) return
+    const videojs = (window as any).videojs; // global
+
+    if (!videojs || !videojs.getPlugin('hlsQualitySelector')) {
+        console.error('HLS Quality Selector plugin not loaded yet!');
+        return;
+    }
     isHls.value = detectHls(props.link ?? props.src)
     isMaster.value = detectMaster(props.link ?? props.src)
 
@@ -111,21 +120,23 @@ onMounted(() => {
             }
         },
         sources: [{
-            src: props.src || props.link,
+            src: props.src?.includes('movies') ? props.src : generateLink(props.src) || props.link,
             type: isHls.value ? 'application/x-mpegURL' : 'video/mp4'
         }],
         controlBar: {
             pictureInPictureToggle: false,
         }
 
-    })
-
+    });
     player.ready(() => {
         if (!isHls.value) return;
-        // HLS-specific setup
-        player.hlsQualitySelector({
-            displayCurrentQuality: true,
-        });
+        const source = context.createMediaElementSource(player.tech().el());
+        source.connect(gainNode);
+        gainNode.connect(context.destination);
+        const dB = 6;//let the bodies hit the floor
+        gainNode.gain.value = Math.pow(10, dB / 20);
+        // HLS setups
+
         const hlsPlugin = player.hlsQualitySelector();
         const origSetQuality = hlsPlugin.setQuality.bind(hlsPlugin);
         console.log(hlsPlugin)
@@ -168,7 +179,7 @@ onMounted(() => {
     })
     player.on('loadedmetadata', () => {
         updateStreamInfo(player, metadata)
-        if(!videoPlayerContainerRef.value) return;
+        if (!videoPlayerContainerRef.value) return;
         loaded.value = true
         videoPlayerContainerRef.value.style.opacity = '1';
         // videotitle.value = player.mediainfo.name; 
@@ -205,6 +216,9 @@ onMounted(() => {
     })
     player.on('timeupdate', () => updateStreamInfo(player, metadata));
     player.on('resize', () => updateStreamInfo(player, metadata));
+    player.on('play', () => {
+        context.resume();
+    });
 })
 
 onUnmounted(() => {
@@ -233,11 +247,13 @@ onUnmounted(() => {
 }
 
 .cont {
-    width: 1200px;
     background-color: rgb(41, 41, 41);
     overflow-y: auto;
     overflow-x: hidden;
+}
 
+.cont-w-normal {
+    width: 1200px;
 }
 
 
@@ -265,67 +281,71 @@ onUnmounted(() => {
 </style>
 <style>
 .inner-video {
-  width: 100%;
-  max-width: 100%;
-  padding: 10px;
-  aspect-ratio: 16 / 9;
-  position: relative;
-  overflow: hidden;
-  border-radius: 10px;
-  /* background-color: black; */
-  
+    width: 100%;
+    max-width: 100%;
+    padding: 10px;
+    aspect-ratio: 16 / 9;
+    position: relative;
+    overflow: hidden;
+    border-radius: 10px;
+    /* background-color: black; */
+
 }
 
 .inner-video .video-js {
-    
-  width: 100%;
-  height: 100%;
-  border-radius: inherit;
-  overflow: hidden;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+
+    width: 100%;
+    height: 100%;
+    border-radius: inherit;
+    overflow: hidden;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
 }
+
 .video-js video {
-  object-fit: contain;
-  width: 100%;
-  height: 100%;
+    object-fit: contain;
+    width: 100%;
+    height: 100%;
 
 }
-.video-js .vjs-control-bar{
+
+.video-js .vjs-control-bar {
     font-family: Inter, Avenir, Helvetica, Arial, sans-serif;
 }
+
 .video-js .vjs-control-bar {
-  background-color: rgba(0, 0, 0, 0.8); 
-  border-top: 2px solid #43b839;      
-  padding: 2px;
-  height: 35px;
-  right: -1px;
-  width: auto;
-  border-radius: 10px;
-  transition: background-color 0.3s ease;
+    background-color: rgba(0, 0, 0, 0.8);
+    border-top: 2px solid #43b839;
+    padding: 2px;
+    height: 35px;
+    right: -1px;
+    width: auto;
+    border-radius: 10px;
+    transition: background-color 0.3s ease;
 }
 
 .video-js .vjs-progress-control:hover .vjs-time-tooltip {
     font-family: inherit;
     font-size: 10pt;
 }
-.video-js .vjs-control-bar .vjs-menu-content{
+
+.video-js .vjs-control-bar .vjs-menu-content {
     font-family: inherit;
     background-color: rgba(0, 0, 0, 0.8);
     margin-bottom: 0.2rem;
     border-radius: 10px 10px 0 0;
 }
 
-.video-js .vjs-control-bar .vjs-menu-button-popup{
+.video-js .vjs-control-bar .vjs-menu-button-popup {
     transition: all 0.3 linear;
 }
 
 .video-js .vjs-control-bar .vjs-button {
-  color: #ffffff;
+    color: #ffffff;
 }
 
 .video-js .vjs-play-control:hover,
 .video-js .vjs-volume-panel:hover,
 .video-js .vjs-fullscreen-control:hover {
-  color: #43b839;
+    color: #43b839;
 }
 </style>

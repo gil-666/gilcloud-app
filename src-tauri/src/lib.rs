@@ -6,10 +6,12 @@ use dunce;
 use actix_cors::Cors;
 use actix_files::NamedFile;
 use actix_multipart::Multipart;
+use actix_web::http::header;
 use actix_web::{
     delete, error, get, middleware, post, web, App, Error, HttpResponse, HttpServer, Responder,
 };
 use futures_util::TryStreamExt as _;
+use lofty::file::TaggedFileExt;
 use sanitize_filename::sanitize;
 use serde_json::json;
 use sqlx::SqlitePool;
@@ -55,6 +57,18 @@ struct MovieResponse {
     cover: Option<String>,
     audiotracks: Vec<String>,
     subtracks: Vec<String>,
+}
+
+#[derive(serde::Serialize)]
+struct MusicMetadata {
+    title: Option<String>,
+    artist: Option<String>,
+    album: Option<String>,
+    year: Option<u32>,
+    genre: Option<String>,
+    comment: Option<String>,
+    track: Option<u32>,
+    picture: Option<String>, // base64 data URI
 }
 
 #[get("/movies")]
@@ -229,12 +243,95 @@ async fn movie_file(
 
     // Prevent path traversal
     let canonical = dunce::canonicalize(&full_path)
-    .map_err(|_| actix_web::error::ErrorNotFound("Invalid path"))?;
+        .map_err(|_| actix_web::error::ErrorNotFound("Invalid path"))?;
 
     Ok(NamedFile::open(canonical)?)
 }
+
+#[get("/music_metadata")]
+async fn music_metadata(
+    web::Query(params): web::Query<std::collections::HashMap<String, String>>,
+) -> impl Responder {
+    use lofty::file::AudioFile;
+    use lofty::tag::Accessor;
+    use std::borrow::Cow;
+    use urlencoding::decode;
+    // Decode the file param and ensure it's a Cow<'_, str>
+    let file_param: Cow<'_, str> = match params.get("file") {
+        Some(f) => decode(f).unwrap_or_else(|_| f.into()), // decode returns Cow<'_, str>
+        None => return HttpResponse::BadRequest().body("Missing 'file' parameter"),
+    };
+
+    // Determine actual file path
+    let file_path: PathBuf = if file_param.starts_with("/download/") {
+        let base_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("..")
+            .join("data")
+            .join("storage")
+            .join("user")
+            .canonicalize()
+            .unwrap();
+
+        let rel_path = &file_param["/download/".len()..];
+        let full_path = base_dir.join(rel_path);
+
+        match full_path.canonicalize() {
+            Ok(canon) if canon.starts_with(&base_dir) => canon,
+            _ => return HttpResponse::Forbidden().body("Access denied"),
+        }
+    } else {
+        PathBuf::from(file_param.as_ref())
+    };
+
+    let tagged_file = match lofty::read_from_path(&file_path) {
+        Ok(f) => f,
+        Err(e) => return HttpResponse::InternalServerError().body(format!("Metadata error: {}", e)),
+    };
+
+    let tag = match tagged_file.primary_tag() {
+        Some(t) => t,
+        None => {
+            return HttpResponse::Ok().json(MusicMetadata {
+                title: None,
+                artist: None,
+                album: None,
+                year: None,
+                genre: None,
+                comment: None,
+                track: None,
+                picture: None,
+            })
+        }
+    };
+
+    let mut meta = MusicMetadata {
+        title: tag.title().map(|s| s.to_string()),
+        artist: tag.artist().map(|s| s.to_string()),
+        album: tag.album().map(|s| s.to_string()),
+        year: tag.year(),
+        genre: tag.genre().map(|s| s.to_string()),
+        comment: tag.comment().map(|s| s.to_string()),
+        track: tag.track(),
+        picture: None,
+    };
+
+    if let Some(picture) = tag.pictures().first() {
+        let mime_str = picture
+            .mime_type()
+            .map(|m| m.to_string())
+            .unwrap_or_else(|| "unknown".to_string());
+        let encoded = base64::encode(picture.data());
+        meta.picture = Some(format!("data:{};base64,{}", mime_str, encoded));
+    }
+
+    HttpResponse::Ok().json(meta)
+}
+
 #[get("/download/{username}/{filename:.*}")]
-async fn download_file(path: web::Path<(String, String)>) -> Result<NamedFile, actix_web::Error> {
+async fn download_file(
+    req: HttpRequest,
+    path: web::Path<(String, String)>,
+) -> Result<NamedFile, actix_web::Error> {
     let (username, filename) = path.into_inner();
     let base_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("..")
@@ -244,17 +341,25 @@ async fn download_file(path: web::Path<(String, String)>) -> Result<NamedFile, a
     let base_dir = base_dir.canonicalize()?;
     let full_path = base_dir.join(&username).join(&filename).canonicalize()?;
 
-    //stop guessing home dirs
     if !full_path.starts_with(&base_dir) {
         return Err(actix_web::error::ErrorForbidden("Access denied"));
     }
 
-    Ok(NamedFile::open(full_path)?.set_content_disposition(
-        actix_web::http::header::ContentDisposition {
-            disposition: actix_web::http::header::DispositionType::Attachment,
-            parameters: vec![],
-        },
-    ))
+    let mut file = NamedFile::open(full_path)?;
+
+    // Use inline if client requests Range (likely a player)
+    let disposition_type = if req.headers().contains_key("Range") {
+        actix_web::http::header::DispositionType::Inline
+    } else {
+        actix_web::http::header::DispositionType::Attachment
+    };
+
+    file = file.set_content_disposition(actix_web::http::header::ContentDisposition {
+        disposition: disposition_type,
+        parameters: vec![],
+    });
+
+    Ok(file)
 }
 #[delete("/delete/{username}/{filename}")]
 async fn delete_file(path: web::Path<(String, String)>) -> Result<HttpResponse, actix_web::Error> {
@@ -484,6 +589,7 @@ pub async fn run() {
                     .service(files)
                     .service(delete_file)
                     .service(create_folder)
+                    .service(music_metadata)
             })
             .bind(("0.0.0.0", 8080))
             .expect("Failed to bind Actix server")

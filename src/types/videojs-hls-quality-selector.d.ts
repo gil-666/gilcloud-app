@@ -1,4 +1,4 @@
-declare module 'videojs-hls-quality-selector/dist/videojs-hls-quality-selector.js' {
-  const plugin: any;
-  export default plugin;
+declare module 'videojs-quality-selector-hls' {
+  const value: any;
+  export default value;
 }
