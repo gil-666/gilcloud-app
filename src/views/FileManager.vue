@@ -32,7 +32,7 @@
 </template>
 
 <script setup lang="ts">
-import {useHead} from '@vueuse/head'
+import {useHead} from '@unhead/vue'
 // Set static meta for SSG
 useHead({
   title: 'GilCloud | Drive',

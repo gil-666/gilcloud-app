@@ -34,7 +34,7 @@ useHead({
     { property: 'og:title', content: 'GilCloud | Movies' },
     { property: 'og:description', content: 'Watch movies online with ease' },
     { property: 'og:type', content: 'website' },
-    { property: 'og:image', content: 'https://api.hanekawa.online/movies/2/cover.jpg' } // optional preview image
+    { property: 'og:image', content: 'https://api.hanekawa.online/movies/2/cover.jpg' }
   ]
 })
 import { useAppStore } from '../stores/app';

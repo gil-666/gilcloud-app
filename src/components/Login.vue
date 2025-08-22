@@ -1,4 +1,14 @@
 <script setup lang="ts">
+import {useHead} from '@unhead/vue'
+useHead({
+  title: 'GilCloud | Login',
+  meta: [
+    { name: 'description', content: 'Cloud Storage + Movies + Music & more on GilCloud' },
+    { property: 'og:title', content: 'GilCloud | Login' },
+    { property: 'og:description', content: 'Cloud Storage + Movies + Music & more on GilCloud' },
+    { property: 'og:type', content: 'website' },
+  ]
+})
 import {ref} from "vue"
 import axios from "axios"
 import {useAppStore} from "../stores/app.ts";

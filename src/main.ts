@@ -1,17 +1,14 @@
-import { createHead } from '@vueuse/head'
+import { createUnhead } from '@unhead/vue'
 import { ViteSSG } from 'vite-ssg';
 import { createPinia } from 'pinia';
 import App from './App.vue';
 import PrimeVue from 'primevue/config';
 import ToastService from 'primevue/toastservice';
 import { router } from './router';
-
 export const createApp = ViteSSG(
   App,
   { routes: router.options.routes },
   ({ app, router, isClient, initialState }) => {
-    const head = createHead()
-    app.use(head)
     // Plugins
     app.use(PrimeVue, { unstyled: true });
     app.use(createPinia());
@@ -22,6 +19,7 @@ export const createApp = ViteSSG(
 
     // Only set useApiUrl() on client
   }
+
 );
 export function useApiUrl() {
   return import.meta.env.VITE_API_URL
