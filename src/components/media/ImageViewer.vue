@@ -1,6 +1,7 @@
 <template>
     <Loader v-if="!loaded" />
-    <div v-else class="photo-player-container fixed text-center inset-0 flex justify-center z-90">
+    <div v-else class="photo-player-container fixed text-center inset-0 justify-center place-items-center z-100">
+        <BannerLink v-if="!props.src"/>
         <i v-if="!props.link" class="pi pi-times fixed right-4 top-4 cursor-pointer z-90" @click="$emit('close')"
             style="font-size: 30px"></i>
 
@@ -45,6 +46,7 @@ useHead({
 })
 import { ref, onMounted } from 'vue';
 import Loader from '../Loader.vue';
+import BannerLink from '../ui/BannerLink.vue';
 import { generateLink } from '../../util/linkGen';
 const emit = defineEmits<{ (e: 'close'): void }>()
 const loaded = ref(false);

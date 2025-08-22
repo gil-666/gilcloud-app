@@ -1,6 +1,9 @@
 <template>
+  
   <Loader v-if="!loaded" />
-  <div v-show="loaded" class="audio-player-container fixed text-center inset-0 flex justify-center z-100">
+  
+  <div v-show="loaded" class="audio-player-container fixed text-center inset-0 place-items-center justify-center z-100">
+    <BannerLink v-if="!props.src"/>
     <i v-if="!props.link" class="pi pi-times fixed right-4 top-4 cursor-pointer z-100" @click="$emit('close')"
       style="font-size: 30px"></i>
 
@@ -32,38 +35,41 @@
           </div>
         </div>
 
-        <i :class="isPlaying ? 'pi pi-pause' : 'pi pi-play'" class="p-1 play-button cursor-pointer mb-4"
-          @click="togglePlay"></i>
+        <i :class="isPlaying ? 'pi pi-pause' : 'pi pi-play'" class="p-2 play-button cursor m-5" @click="togglePlay"></i>
         <div v-if="metadata" class="audio-details mt-5">
-          <div class="relative">
+          <div class="relative ">
             <p class="text-2xl">audio details:</p>
-            <!-- <p class="text-sm">
+            <div class="details ">
+              <!-- <p class="text-sm">
                     Uploaded by:5
                     {{ props.src.slice(props.src.indexOf("user/") + 5, props.src.lastIndexOf("/")) }}
                 </p> -->
-            <p class="text-lg" v-if="metadata.album">
-              Album: {{ metadata.album }}
-            </p>
-            <br>
-            <p class="text-lg" v-if="metadata.genre">
-              Genre: {{ metadata.genre }}
-            </p>
-            <p class="text-lg" v-if="metadata.year">
-              Year: {{ metadata.year }}
-            </p>
+              <p class="text-lg" v-if="metadata.album">
+                Album: {{ metadata.album }}
+              </p>
+              <p class="text-lg" v-if="metadata.genre">
+                Genre: {{ metadata.genre }}
+              </p>
+              <p class="text-lg" v-if="metadata.year">
+                Year: {{ metadata.year }}
+              </p>
 
-            <!-- <p class="text-lg">
+              <!-- <p class="text-lg">
                         audio bitrate: {{ metadata.bitrate }} kbps
                     </p> -->
-            <p class="text-lg">
-              Duration: {{ Math.floor(duration / 60)
-                +
-                ":" +
-                (Math.floor(duration % 60).toString().padStart(2, "0")) }}
-            </p>
-            <p class="text-lg">
-              Audio format: {{ audioFormat }}
-            </p>
+                    <br>
+              <div class="flex grid-cols-2 gap-2">
+                <p class="text-lg">
+                  Length: {{ Math.floor(duration / 60)
+                    +
+                    ":" +
+                    (Math.floor(duration % 60).toString().padStart(2, "0")) }}
+                </p>
+                <p class="text-lg">
+                  Audio format: {{ audioFormat }}
+                </p>
+              </div>
+            </div>
             <br></br>
           </div>
         </div>
@@ -72,7 +78,7 @@
   </div>
 </template>
 <script setup lang="ts">
-import {useHead} from '@unhead/vue'
+import { useHead } from '@unhead/vue'
 useHead({
   title: 'GilCloud | Audio Player',
   meta: [
@@ -88,6 +94,7 @@ import Loader from '../Loader.vue';
 import { readTrackTags } from '../../helper/audioplayer';
 import { generateLink } from '../../util/linkGen';
 import { format } from 'path';
+import BannerLink from '../ui/BannerLink.vue';
 const loaded = ref(false);
 const emit = defineEmits<{ (e: 'close'): void }>()
 const props = defineProps({
@@ -300,7 +307,6 @@ onUnmounted(() => {
 
 .play-button {
   font-size: 30px;
-  margin-top: 10px;
 }
 
 .audio-player-container {

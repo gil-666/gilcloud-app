@@ -1,9 +1,10 @@
 <template>
     <Loader v-if="!loaded" />
-    <div ref="videoPlayerContainerRef" class="video-player-container fixed inset-0 flex justify-center z-100">
+    <div ref="videoPlayerContainerRef" class="video-player-container fixed inset-0 place-items-center justify-center z-100">
+        <BannerLink v-if="!props.src"/>
         <i v-if="!props.link" class="pi pi-times fixed right-4 top-4 cursor-pointer z-100" @click="$emit('close')"
             style="font-size: 30px"></i>
-        <div :class="props.link ? 'w-full cont' : 'cont cont-w-normal'"
+        <div :class="props.link ? 'w-full cont inner-video-view' : 'cont cont-w-normal'"
             class="relative h-screen place-items-center text-center">
             <div class="w-full p-2 title mt-10 w-20">
                 <h1 v-if="!isHls && !props.link" class="text-3xl">
@@ -57,16 +58,16 @@
 </template>
 
 <script setup lang="ts">
-import {useHead} from '@unhead/vue'
+import { useHead } from '@unhead/vue'
 useHead({
-  title: 'GilCloud | Video Player',
-  meta: [
-    { name: 'description', content: 'Watch movies online with ease on GilCloud.' },
-    { property: 'og:title', content: 'GilCloud | Video Player' },
-    { property: 'og:description', content: 'Stream your favorite movies directly from GilCloud.' },
-    { property: 'og:type', content: 'website' },
-    { property: 'og:image', content: 'https://api.hanekawa.online/movies/2/cover.jpg' } // optional preview image
-  ]
+    title: 'GilCloud | Video Player',
+    meta: [
+        { name: 'description', content: 'Watch movies online with ease on GilCloud.' },
+        { property: 'og:title', content: 'GilCloud | Video Player' },
+        { property: 'og:description', content: 'Stream your favorite movies directly from GilCloud.' },
+        { property: 'og:type', content: 'website' },
+        { property: 'og:image', content: 'https://api.hanekawa.online/movies/2/cover.jpg' } // optional preview image
+    ]
 })
 import { onMounted, onUnmounted, Ref, ref } from 'vue'
 import { detectHls, detectMaster, updateStreamInfo, forceVhsQuality } from '../../helper/videoplayer.ts'
@@ -75,12 +76,11 @@ import { detectHls, detectMaster, updateStreamInfo, forceVhsQuality } from '../.
 // import 'video.js/dist/video-js.css'
 // import 'videojs-contrib-quality-levels'
 
-
+import BannerLink from '../ui/BannerLink.vue'
 import { useToast } from 'primevue'
 import Loader from '../Loader.vue'
 import { generateLink } from '../../util/linkGen.ts';
-// const context = new (window.AudioContext || (window as any).webkitAudioContext)();
-// const gainNode = context.createGain();
+
 const loaded = ref(false)
 
 const media: any = ref()
@@ -108,6 +108,8 @@ const isMaster: Ref<boolean | undefined> = ref(false)
 const audioTracks = ref<any[]>([])
 const subtitleTracks = ref<any[]>([])
 onMounted(() => {
+    const context = new ((window as any).AudioContext || (window as any).webkitAudioContext)();
+    const gainNode = (context as any).createGain();
     const userLocale = navigator.language || 'en';
     const languageDisplay = new Intl.DisplayNames([userLocale], { type: 'language' });
     const userLangBase = userLocale.split('-')[0];
@@ -141,11 +143,11 @@ onMounted(() => {
     });
     player.ready(() => {
         if (!isHls.value) return;
-        // const source = context.createMediaElementSource(player.tech().el());
-        // source.connect(gainNode);
-        // gainNode.connect(context.destination);
-        // const dB = 6;//let the bodies hit the floor
-        // gainNode.gain.value = Math.pow(10, dB / 20);
+        const source = context.createMediaElementSource(player.tech().el());
+        source.connect(gainNode);
+        gainNode.connect(context.destination);
+        const dB = 6;//let the bodies hit the floor
+        gainNode.gain.value = Math.pow(10, dB / 20);
         // HLS setups
 
         const hlsPlugin = player.hlsQualitySelector();
@@ -227,9 +229,9 @@ onMounted(() => {
     })
     player.on('timeupdate', () => updateStreamInfo(player, metadata));
     player.on('resize', () => updateStreamInfo(player, metadata));
-    // player.on('play', () => {
-    //     context.resume();
-    // });
+    player.on('play', () => {
+        context.resume();
+    });
 })
 
 onUnmounted(() => {
@@ -301,6 +303,10 @@ onUnmounted(() => {
     border-radius: 10px;
     /* background-color: black; */
 
+}
+
+.inner-video-view .inner-video {
+    max-width: 1400px;
 }
 
 .inner-video .video-js {
