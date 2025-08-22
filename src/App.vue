@@ -1,4 +1,11 @@
 <script setup lang="ts" xmlns="http://www.w3.org/1999/html">
+import { useHead } from '@unhead/vue'
+useHead({
+  title: 'GilCloud',
+  meta: [
+    { name: 'description', content: 'Welcome to GilCloud' }
+  ]
+})
 import { computed, onMounted, ref } from "vue";
 import Button from "./volt/Button.vue";
 import ProgressBar from "./volt/ProgressBar.vue";
@@ -23,6 +30,7 @@ const isUploading = ref(false);
 const toggleSidebar = () => (store.UIEvents.showMenuBar = !store.UIEvents.showMenuBar);
 const router = useRouter();
 const route = useRoute();
+
 onMounted(() => {
   const isPublic = route.meta.public ?? false;
 

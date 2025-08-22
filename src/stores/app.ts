@@ -1,6 +1,7 @@
 // src/stores/app.ts
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
+import { getLocalStorageItem } from '../util/browser';
 
 export const useAppStore = defineStore('app', () => {
     const userHomeDir = ref(''); // example of global state
@@ -8,7 +9,8 @@ export const useAppStore = defineStore('app', () => {
     const currentDir = ref('')
     const progress = ref('')
     const isLoggedIn = ref(false);
-    const username = ref(localStorage.getItem('username') || '');
+    const username = ref(getLocalStorageItem('username', ''))
+
     const UIEvents = ref({
         showFileDropdown: false,
         showMenuBar: false

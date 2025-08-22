@@ -4,6 +4,7 @@ import axios from "axios"
 import {useAppStore} from "../stores/app.ts";
 import { useRouter } from "vue-router";
 import { useApiUrl } from "../main.ts";
+import { getLocalStorageItem } from "../util/browser.ts";
 const emit = defineEmits(["loginSuccess"])
 // Reactive state
 const router = useRouter();
@@ -12,7 +13,7 @@ const username = ref("")
 const password = ref("")
 const errorMessage = ref("")
 const store = useAppStore();
-  if(localStorage.getItem('username')){
+  if(getLocalStorageItem('username', '')){
     router.push({name: 'home'})
   }
 // Toggle form

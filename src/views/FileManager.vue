@@ -32,11 +32,24 @@
 </template>
 
 <script setup lang="ts">
+import {useHead} from '@vueuse/head'
+// Set static meta for SSG
+useHead({
+  title: 'GilCloud | Drive',
+  meta: [
+    { name: 'description', content: 'File Manager' },
+    { property: 'og:title', content: 'GilCloud | Drive' },
+    { property: 'og:description', content: 'File Manager' },
+    { property: 'og:type', content: 'website' },
+    { property: 'og:image', content: '/favicon.ico' } // optional preview image
+  ]
+})
 import { computed, onMounted, ref } from "vue";
 import { useAppStore } from "../stores/app.ts";
 import NewFolder from "@/components/filemanager/NewFolder.vue";
 import DirectoryContent from "@/components/filemanager/DirectoryContent.vue";
 import Loader from "../components/Loader.vue";
+import { useApiUrl } from "../main.ts";
 
 const store = useAppStore();
 const newFolderVisible = ref(false);

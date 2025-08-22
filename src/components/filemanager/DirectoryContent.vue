@@ -155,11 +155,13 @@ async function loadDirectory(dir: string) {
   isLoading.value = true;
   folders.value = [];
   files.value = [];
-  try {
-    folders.value = await getFolders(dir);
-    files.value = await getFiles(dir);
-  } finally {
-    isLoading.value = false;
+  if (dir) {
+    try {
+      folders.value = await getFolders(dir);
+      files.value = await getFiles(dir);
+    } finally {
+      isLoading.value = false;
+    }
   }
 }
 await (async () => {

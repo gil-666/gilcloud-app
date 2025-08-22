@@ -57,6 +57,17 @@
 </template>
 
 <script setup lang="ts">
+import {useHead} from '@vueuse/head'
+useHead({
+  title: 'GilCloud | Video Player',
+  meta: [
+    { name: 'description', content: 'Watch movies online with ease on GilCloud.' },
+    { property: 'og:title', content: 'GilCloud | Video Player' },
+    { property: 'og:description', content: 'Stream your favorite movies directly from GilCloud.' },
+    { property: 'og:type', content: 'website' },
+    { property: 'og:image', content: 'https://api.hanekawa.online/movies/2/cover.jpg' } // optional preview image
+  ]
+})
 import { onMounted, onUnmounted, Ref, ref } from 'vue'
 import { detectHls, detectMaster, updateStreamInfo, forceVhsQuality } from '../../helper/videoplayer.ts'
 // import videojs from 'video.js'
@@ -68,12 +79,10 @@ import { detectHls, detectMaster, updateStreamInfo, forceVhsQuality } from '../.
 import { useToast } from 'primevue'
 import Loader from '../Loader.vue'
 import { generateLink } from '../../util/linkGen.ts';
-const context = new (window.AudioContext || (window as any).webkitAudioContext)();
-const gainNode = context.createGain();
+// const context = new (window.AudioContext || (window as any).webkitAudioContext)();
+// const gainNode = context.createGain();
 const loaded = ref(false)
-const userLocale = navigator.language || 'en';
-const languageDisplay = new Intl.DisplayNames([userLocale], { type: 'language' });
-const userLangBase = userLocale.split('-')[0];
+
 const media: any = ref()
 const videotitle = ref('');
 const emit = defineEmits<{ (e: 'close'): void }>()
@@ -99,7 +108,9 @@ const isMaster: Ref<boolean | undefined> = ref(false)
 const audioTracks = ref<any[]>([])
 const subtitleTracks = ref<any[]>([])
 onMounted(() => {
-
+    const userLocale = navigator.language || 'en';
+    const languageDisplay = new Intl.DisplayNames([userLocale], { type: 'language' });
+    const userLangBase = userLocale.split('-')[0];
     if (!videoPlayerRef.value) return
     const videojs = (window as any).videojs; // global
 
@@ -120,7 +131,7 @@ onMounted(() => {
             }
         },
         sources: [{
-            src: props.src?.includes('movies') ? props.src : generateLink(props.src) || props.link,
+            src: props.src ? (props.src.includes('movies') ? props.src : generateLink(props.src)) : props.link,
             type: isHls.value ? 'application/x-mpegURL' : 'video/mp4'
         }],
         controlBar: {
@@ -130,11 +141,11 @@ onMounted(() => {
     });
     player.ready(() => {
         if (!isHls.value) return;
-        const source = context.createMediaElementSource(player.tech().el());
-        source.connect(gainNode);
-        gainNode.connect(context.destination);
-        const dB = 6;//let the bodies hit the floor
-        gainNode.gain.value = Math.pow(10, dB / 20);
+        // const source = context.createMediaElementSource(player.tech().el());
+        // source.connect(gainNode);
+        // gainNode.connect(context.destination);
+        // const dB = 6;//let the bodies hit the floor
+        // gainNode.gain.value = Math.pow(10, dB / 20);
         // HLS setups
 
         const hlsPlugin = player.hlsQualitySelector();
@@ -216,9 +227,9 @@ onMounted(() => {
     })
     player.on('timeupdate', () => updateStreamInfo(player, metadata));
     player.on('resize', () => updateStreamInfo(player, metadata));
-    player.on('play', () => {
-        context.resume();
-    });
+    // player.on('play', () => {
+    //     context.resume();
+    // });
 })
 
 onUnmounted(() => {
