@@ -14,7 +14,7 @@
       </div>
 
       <h1 class="text-3xl pb-2 relative text-center" :title="formatDirText(currentDir, true)">{{
-        formatDirText(currentDir) }}</h1>
+        dirTitle }}</h1>
     </div>
 
     <div class="border-1 border-neutral-600 m-5 relative bottom-5 p-10 overflow-y-auto h-full max-h-11/12">
@@ -50,7 +50,7 @@ import NewFolder from "@/components/filemanager/NewFolder.vue";
 import DirectoryContent from "@/components/filemanager/DirectoryContent.vue";
 import Loader from "../components/Loader.vue";
 import { useApiUrl } from "../main.ts";
-
+const dirTitle = computed(() => formatDirText(String(currentDir.value)));
 const store = useAppStore();
 const newFolderVisible = ref(false);
 const currentDir = computed({
@@ -86,19 +86,25 @@ async function reloadDir() {
 
 function formatDirText(text: string, getUncut = false) {
   const marker = `data/storage/user/`;
-  const normalized = text.replace(/\\/g, "/"); // normalize slashes
+  const normalized = text.replace(/\\/g, "/"); // Normalize slashes
   const index = normalized.indexOf(marker);
-  const uncut = text.slice(index + marker.length).replace(/\\/g, "/")
-  if (getUncut) {
-    return uncut
-  }
-  if (uncut.length > 22) {
-    return "..." + String(uncut).slice(uncut.length - 22, uncut.length);
-  } else {
-    return uncut
-  }
 
+  if (index === -1) return '';
+  const uncut = normalized.slice(index + marker.length);
+
+  if (getUncut) {
+    return uncut;
+  }
+  const lim = 28;
+  const segments = uncut.split('/');
+  const currentFolder = segments[segments.length - 1];
+  if (currentFolder.length > lim) {
+    return currentFolder.slice(0, lim) + '...';
+  } else {
+    return currentFolder;
+  }
 }
+
 
 // createFolder delegates to directory content via prop submission; keep same logic here for closing
 async function createFolder(foldername: string) {

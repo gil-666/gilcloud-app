@@ -7,7 +7,7 @@
     <p v-if="isDirEmpty()" class="font-light">No items to show</p>
     <!-- <p class="font-light" id="load">Loading</p> -->
     <div v-if="!isDirEmpty()"
-      class="file-list gap-10 grid 2xl:grid-cols-8 lg:grid-cols-4 grid-cols-2 justify-items-center">
+      class="file-list gap-8 grid 2xl:grid-cols-8 lg:grid-cols-4 grid-cols-2 justify-items-center">
       <Folder v-for="folder in folders" :key="folder.path" v-bind="folder" @delete="deleteFile(folder.path)"
         @click="changeDir(folder.path)" />
       <File v-for="file in files" :key="file.path" v-bind="file" @click="performFileAction(file)"

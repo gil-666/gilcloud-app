@@ -19,7 +19,13 @@ const emit = defineEmits(['delete'])
     <i @click.stop="emit('delete')" class="right-2 top-2 p-1 delete-file pi pi-trash absolute z-10"
       style="font-size: 20px"></i>
     <i class="pi pi-folder" style="font-size: 40px" />
-    <p class="wrap-anywhere">{{ formatTextLimit(props.name,30) }}</p>
+    <p class="hidden sm:block wrap-anywhere font-light" :title="props.name">
+      {{ formatTextLimit(props.name, 30) }}
+    </p>
+
+    <p class="block sm:hidden wrap-anywhere font-light" :title="props.name">
+      {{ formatTextLimit(props.name, 15) }}
+    </p>
   </div>
 </template>
 

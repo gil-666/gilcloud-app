@@ -4,7 +4,7 @@
         <BannerLink v-if="!props.file" />
         <i v-if="!props.link" class="pi pi-times fixed right-4 top-4 cursor-pointer z-90" @click="$emit('close')"
             style="font-size: 30px"></i>
-        <div :class="props.link ? 'w-full cont-view' : 'cont'"
+        <div :class="props.link ? 'w-full cont-view' : 'cont cont-w-normal'"
             class="p-5 relative h-screen items-center place-items-center">
             <div class="title mt-8">
                 <h1 class="text-3xl max-w-full break-all">
@@ -131,6 +131,10 @@ onMounted(async () => {
     overflow-x: hidden;
 }
 
+.cont-w-normal{
+    width: 700px;
+}
+
 .cont-view {
     background-color: rgb(41, 41, 41);
     overflow-y: auto;
@@ -138,8 +142,7 @@ onMounted(async () => {
 }
 
 .inner-file {
-    min-width: 470px;
-    max-width: 100%;
+    width: 100%;
     height: 10rem;
     font-family: Inter, Avenir, Helvetica, Arial, sans-serif;
     overflow: hidden;
