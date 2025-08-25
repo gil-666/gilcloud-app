@@ -15,10 +15,11 @@
             <div class="p-5 inner-file rounded-2xl border-1 place-items-center items-center border-neutral-700 mt-5">
                 <!-- <img :src="props.src?.path ? generateLink(props.src?.path) : props.link" alt="Image" class="image" /> -->
                 <div class="pi pi-file relative" style="font-size: 40px;">
-                    <div class="text-2xl font-bold mt-3">{{ file.name }}</div>
+                    <div class="text-2xl font-bold mt-3 break-all">{{ formatTextLimit(file.name, 50) }}</div>
                 </div>
             </div>
-            <div @click="downloadFile(file.path)" class="download-btn cursor-pointer p-4 rounded-2xl shadow-2xl mt-5">Download</div>
+            <div @click="downloadFile(file.path)" class="download-btn cursor-pointer p-4 rounded-2xl shadow-2xl mt-5">
+                Download</div>
             <div v-if="metadata" class="file-details mt-5">
                 <div class="relative">
                     <p class="text-3xl">file details:</p>
@@ -38,7 +39,7 @@
             </div>
 
         </div>
-        
+
     </div>
 </template>
 <script setup lang="ts">
@@ -60,6 +61,7 @@ import BannerLink from '../ui/BannerLink.vue';
 import { useApiUrl } from '../../main';
 import { extractRelativePath, generateLink, generateRelativePathString } from '../../util/linkGen';
 import axios from 'axios';
+import { formatTextLimit } from '../../util/textFormats';
 let file: FileStructure;
 const emit = defineEmits<{ (e: 'close'): void }>()
 const loaded = ref(false);
@@ -71,7 +73,7 @@ let metadata = {
     username: 'Someone',
     fileType: '',
 }
-function downloadFile(link:string){
+function downloadFile(link: string) {
     const gen = generateLink(link)
     window.open(gen)
 }
@@ -123,7 +125,7 @@ onMounted(async () => {
 }
 
 .cont {
-    width: 900px;
+    max-width: 100%;
     background-color: rgb(41, 41, 41);
     overflow-y: auto;
     overflow-x: hidden;
@@ -136,7 +138,8 @@ onMounted(async () => {
 }
 
 .inner-file {
-    width: 10rem;
+    min-width: 470px;
+    max-width: 100%;
     height: 10rem;
     font-family: Inter, Avenir, Helvetica, Arial, sans-serif;
     overflow: hidden;

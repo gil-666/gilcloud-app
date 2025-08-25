@@ -70,7 +70,7 @@ onBeforeUnmount(() => {
     <i :class="getFileTypeIcon(props.name) || 'pi pi-file'" class="mt-3" style="font-size: 50px"/>
     <p class="wrap-anywhere font-light" :title="props.name" >{{formatTextLimit(props.name,30)}}</p>
     <p class="size font-extralight mt-2">{{calculateSize(props.size)}}</p>
-    <p class="down-label hover:opacity-100 relative opacity-0 mt-0">{{getFileTypeIcon(props.name) ? 'open' : 'download'}}</p>
+    <p class="down-label hover:opacity-100 relative opacity-0 mt-0">{{'view'}}</p>
   </div>
 </template>
 
