@@ -15,6 +15,7 @@ use lofty::file::TaggedFileExt;
 use sanitize_filename::sanitize;
 use serde_json::json;
 use sqlx::SqlitePool;
+use std::collections::HashMap;
 use std::fs as fsb;
 use std::io;
 use std::path::Path;
@@ -526,6 +527,53 @@ async fn files(
 
     HttpResponse::Ok().json(entries)
 }
+#[get("/file")]
+async fn file_info(
+    web::Query(params): web::Query<HashMap<String, String>>,
+) -> impl Responder {
+    let username = match params.get("username") {
+        Some(u) => u,
+        None => return HttpResponse::BadRequest().body("Missing 'username' parameter"),
+    };
+
+    let inner = match params.get("path") {
+        Some(p) => p,
+        None => return HttpResponse::BadRequest().body("Missing 'path' parameter"),
+    };
+
+    // Build path: ../data/storage/user/{username}/{inner}
+    let base_path = Path::new("../data/storage/user").join(username);
+    let file_path: PathBuf = base_path.join(inner);
+
+    if !file_path.exists() {
+        return HttpResponse::NotFound().body("File not found");
+    }
+
+    let metadata = match fs::metadata(&file_path).await {
+        Ok(m) => m,
+        Err(e) => {
+            return HttpResponse::InternalServerError()
+                .body(format!("Failed to get file metadata: {}", e))
+        }
+    };
+
+    if !metadata.is_file() {
+        return HttpResponse::BadRequest().body("Requested path is not a file");
+    }
+
+    let entry = FileEntry {
+        name: file_path
+            .file_name()
+            .unwrap_or_default()
+            .to_string_lossy()
+            .to_string(),
+        path: file_path.to_string_lossy().to_string(),
+        size: metadata.len(),
+    };
+
+    HttpResponse::Ok().json(entry)
+}
+
 #[post("/create_folder")]
 async fn create_folder(
     data: web::Json<CreateFolderRequest>,
@@ -586,7 +634,8 @@ pub async fn run() {
                     .service(download_file)
                     .service(storage_usage)
                     .service(folders)
-                    .service(files)
+                    .service(files) // all files
+                    .service(file_info) //individual files
                     .service(delete_file)
                     .service(create_folder)
                     .service(music_metadata)

@@ -10,12 +10,20 @@ function extractRelativePath(fullPath: string, username: string): string {
 }
 
 function generateRelativePathString(filePath: string) {
-  const username = localStorage.getItem("username");
-  if (!username) return;
-  const relativePath = extractRelativePath(filePath, username);
+  const parts = filePath.replace(/\\/g, "/").split("/");
+  const userIndex = parts.indexOf("user");
+  if (userIndex === -1 || userIndex + 1 >= parts.length) {
+    console.error("Invalid file path format:", filePath);
+    return;
+  }
+
+  const username = parts[userIndex + 1];
+  const relativePath = parts.slice(userIndex + 2).join("/");
+
   const encodedPath = encodeURIComponent(relativePath);
-  return `${username}/${encodedPath}`
+  return `${username}/${encodedPath}`;
 }
+
 
 function generateViewLink(filepath:string){
     const type = getFileTypeString(filepath)
@@ -27,7 +35,7 @@ function generateViewLink(filepath:string){
         case "audio":
             return `${window.origin}/view/audio?link=${generateRelativePathString(filepath)}`
         default:
-            break;
+            return `${window.origin}/view/file?link=${generateRelativePathString(filepath)}`
     }
 }
 function generateLink(filePath: string | any) {

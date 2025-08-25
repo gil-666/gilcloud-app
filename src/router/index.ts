@@ -20,6 +20,15 @@ const routes: Array<RouteRecordRaw> = [
     path: '/view',
     name: 'view',
     children: [
+            {
+        path: 'file',
+        name: 'file',
+        component: () => import('../components/media/FileView.vue'),
+        props: route => ({
+          link: route.query.link ? `${route.query.link}` : null
+        }),
+        meta: { title: 'GilCloud | File', public: true },
+      },
       {
         path: 'photo',
         name: 'photo',

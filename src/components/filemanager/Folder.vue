@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { formatTextLimit } from '../../util/textFormats';
+
 const props = defineProps({
   name: {
     type: String,
@@ -17,7 +19,7 @@ const emit = defineEmits(['delete'])
     <i @click.stop="emit('delete')" class="right-2 top-2 p-1 delete-file pi pi-trash absolute z-10"
       style="font-size: 20px"></i>
     <i class="pi pi-folder" style="font-size: 40px" />
-    <p class="wrap-anywhere">{{ props.name }}</p>
+    <p class="wrap-anywhere">{{ formatTextLimit(props.name,30) }}</p>
   </div>
 </template>
 

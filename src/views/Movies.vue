@@ -19,7 +19,7 @@
       </div>
     </div>
     <VideoPlayer v-if="selectedMovie" :subtracks="selectedMovie.subtracks" :title="selectedMovie.title"
-      :src="selectedMovie.master" @close="selectedMovie = null" />
+      :src="selectedMovie.master" :movie="selectedMovie" @close="selectedMovie = null" />
   </main>
 </template>
 
@@ -53,8 +53,9 @@ onMounted(async () => {
   const rawMovies = await GetMovies();
 
 
-  movies.value = rawMovies.map((movie: { master: string; cover: string; audiotracks: string[]; subtracks: string[]; }) => ({
+  movies.value = rawMovies.map((movie: { title: string, master: string; cover: string; audiotracks: string[]; subtracks: string[]; }) => ({
     ...movie,
+    title: movie.title,
     master: getAbsoluteHlsUrl(movie.master),
     cover: getAbsoluteHlsUrl(movie.cover),
     audiotracks: movie.audiotracks?.map(getAbsoluteHlsUrl) ?? [],

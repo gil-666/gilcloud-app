@@ -1,16 +1,18 @@
 <template>
-  
-  <Loader v-if="!loaded" />
-  
-  <div v-show="loaded" class="audio-player-container fixed text-center inset-0 place-items-center justify-center z-100">
-    <BannerLink v-if="!props.src"/>
-    <i v-if="!props.link" class="pi pi-times fixed right-4 top-4 cursor-pointer z-100" @click="$emit('close')"
-      style="font-size: 30px"></i>
 
-    <div :class="props.link ? 'w-full cont' : 'cont cont-w-normal'" class="p-5 relative h-screen place-items-center">
+  <Loader v-if="!loaded" />
+
+  <div v-show="loaded"
+    class="audio-player-container fixed inset-0 place-items-center items-center text-center justify-center z-100">
+    <BannerLink v-if="!props.src" />
+    <i v-if="!props.link" class="pi pi-times fixed right-4 top-4 cursor-pointer z-100"
+      @click="$emit('close'), destroyPlayer(audioPlayerRef)" style="font-size: 30px"></i>
+
+    <div :class="props.link ? 'w-full cont' : 'cont cont-w-normal'"
+      class="p-5 relative items-center h-screen place-items-center">
       <div class="title mt-3 mb-2">
         <h1 v-if="!metadata?.title" class="text-3xl max-w-full break-all">
-          {{ fileName || props.link?.lastIndexOf('/') || 'Audio' }}
+          {{ formatTextLimit(fileName ?? props.link?.lastIndexOf('/'),30) || 'Audio' }}
         </h1>
         <h1 v-else class="text-3xl max-w-full break-all">
           {{ metadata.title }}
@@ -19,13 +21,16 @@
           {{ metadata?.artist || 'Unknown Artist' }}
         </h1>
       </div>
-      <img ref="albumArtRef" src="../../assets/logtrans.png" alt="Audio" class="album-art mt-8"
-        @mousemove="(e) => (handleMouseMove(e, albumArtRef))" @mouseleave="() => resetTransform(albumArtRef)" />
-      <div class="p-5 inner-audio place-items-center z-100">
+      <div class="w-full flex justify-center items-center">
+        <img ref="albumArtRef" src="../../assets/logtrans.png" alt="Audio" class="album-art mt-8"
+          @mousemove="(e) => (handleMouseMove(e, albumArtRef))" @mouseleave="() => resetTransform(albumArtRef)" />
+      </div>
+
+      <div class="p-5 inner-audio block justify-center items-center place-items-center z-100">
         <audio ref="audioPlayerRef" style="display: none" controlslist="nodownload" controls class="audio"
           preload="auto" />
         <!-- progress -->
-        <div class="progress-bar-cont relative items-center space-x-2">
+        <div class="progress-bar-cont w-full relative justify-center items-center space-x-2">
           <input type="range" min="0" :max="duration" step="0.1" v-model="currentTime" @input="onSliderInput"
             @change="onSliderChange" class="flex-1 progress-bar" />
           <div class="timecode font-light absolute flex w-full space-x-1 mt-1">
@@ -36,8 +41,8 @@
         </div>
 
         <i :class="isPlaying ? 'pi pi-pause' : 'pi pi-play'" class="p-2 play-button cursor m-5" @click="togglePlay"></i>
-        <div v-if="metadata" class="audio-details mt-5 w-fit">
-          <div class="relative ">
+        <div v-if="metadata" class="audio-details mt-5 w-full">
+          <div class="relative">
             <p class="text-2xl">audio details:</p>
             <div class="details text-center">
               <!-- <p class="text-sm">
@@ -57,7 +62,7 @@
               <!-- <p class="text-lg">
                         audio bitrate: {{ metadata.bitrate }} kbps
                     </p> -->
-                    <br>
+              <br>
               <div class="block grid-cols-2 gap-2 place-items-center">
                 <p class="text-lg">
                   Length: {{ Math.floor(duration / 60)
@@ -87,7 +92,7 @@ useHead({
   title: computed(() =>
     metadata.value?.title
       ? `${metadata.value.title} - ${metadata.value.artist || 'Unknown Artist'} | GilCloud`
-      : `GilCloud | 'Audio Player'`
+      : `GilCloud | Audio Player`
   ),
   meta: [
     {
@@ -125,11 +130,12 @@ useHead({
 import { ref, onMounted, onUnmounted, Ref, watch, computed, onServerPrefetch } from 'vue';
 import { albumArtOnPause, albumArtOnPlay, applyGlow, handleMouseMove, resetTransform } from '../../util/anim';
 import Loader from '../Loader.vue';
-import { readTrackTags } from '../../helper/audioplayer';
+import { readTrackTags, setupMediaSession } from '../../helper/audioplayer';
 import { generateLink } from '../../util/linkGen';
 import { format } from 'path';
 import BannerLink from '../ui/BannerLink.vue';
 import { useApiUrl } from '../../main';
+import { formatTextLimit } from '../../util/textFormats';
 
 const loaded = ref(false);
 const emit = defineEmits<{ (e: 'close'): void }>()
@@ -223,10 +229,29 @@ const tryPlayWithRetry = async (retries = 2) => {
 
 // update progress bar
 const updateProgress = () => {
-  if (!audioPlayerRef.value) return;
-  currentTime.value = audioPlayerRef.value.currentTime;
-  rafId = requestAnimationFrame(updateProgress);
-};
+  if (!audioPlayerRef.value) return
+  currentTime.value = audioPlayerRef.value.currentTime
+
+  // Update MediaSession position for OS notifications
+  if ('setPositionState' in navigator.mediaSession) {
+    try {
+      navigator.mediaSession.setPositionState({
+        duration: audioPlayerRef.value.duration,
+        playbackRate: audioPlayerRef.value.playbackRate,
+        position: audioPlayerRef.value.currentTime
+      })
+    } catch (err) {
+      console.warn('MediaSession setPositionState failed', err)
+    }
+  }
+
+  rafId = requestAnimationFrame(updateProgress)
+}
+
+function destroyPlayer(audio: HTMLAudioElement | null) {
+  if (!audio) return
+  audio.src = ''
+}
 
 // seek audio
 function onSliderInput(e: Event) {
@@ -300,11 +325,23 @@ onMounted(() => {
     },
     { immediate: true }
   );
+  watch(
+    () => metadata.value,
+    (meta) => {
+      const audio = audioPlayerRef.value
+      if (!meta) return
+      const newMeta = { ...meta } //must be copy 
+      if (!newMeta.title) newMeta.title = fileName.value
+
+      if (audio) setupMediaSession(newMeta, audio)
+    },
+    { immediate: true }
+  )
   audio.onloadedmetadata = async () => {
     // togglePlay()
     loaded.value = true;
     const name = audio.src.split('/').pop()?.split('?')[0];
-    fileName.value = String(name)
+    fileName.value = decodeURIComponent(String(name))
     duration.value = audio.duration;
     const format = computed(() => {
       const src = props.src?.path ?? props.link; // use link if no src
@@ -327,6 +364,15 @@ onMounted(() => {
   audio.onerror = () => {
     console.error("Audio error:", audio.error);
   };
+
+  audio.onpause = () => { //if paused externally
+    albumArtOnPause(albumArtRef.value)
+    isPlaying.value = false;
+  }
+  audio.onplay = () => { //if played externally
+    albumArtOnPlay(albumArtRef.value)
+    isPlaying.value = true;
+  }
 });
 
 onUnmounted(() => {
@@ -343,9 +389,9 @@ onUnmounted(() => {
   overflow-x: hidden;
 }
 
-.cont-w-normal {
-  width: 600px;
-}
+/* .cont-w-normal {
+  max-width: 600px;
+} */
 
 .inner-audio {
 

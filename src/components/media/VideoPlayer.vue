@@ -1,12 +1,13 @@
 <template>
     <Loader v-if="!loaded" />
-    <div ref="videoPlayerContainerRef" class="video-player-container fixed inset-0 place-items-center justify-center z-100">
-        <BannerLink v-if="!props.src"/>
+    <div ref="videoPlayerContainerRef"
+        class="video-player-container fixed inset-0 place-items-center justify-center z-100">
+        <BannerLink v-if="!props.src" />
         <i v-if="!props.link" class="pi pi-times fixed right-4 top-4 cursor-pointer z-100" @click="$emit('close')"
             style="font-size: 30px"></i>
-        <div :class="props.link ? 'w-full cont inner-video-view' : 'cont cont-w-normal'"
+        <div :class="props.link ? 'w-full cont inner-video-view' : 'cont cont-w-auto '"
             class="relative h-screen place-items-center text-center">
-            <div class="w-full p-2 title mt-10 w-20">
+            <div class="w-full p-2 title mt-10">
                 <h1 v-if="!isHls && !props.link" class="text-3xl">
                     Now playing:
                     {{ videotitle }}
@@ -69,8 +70,8 @@ useHead({
         { property: 'og:image', content: 'https://api.hanekawa.online/movies/2/cover.jpg' } // optional preview image
     ]
 })
-import { onMounted, onUnmounted, Ref, ref } from 'vue'
-import { detectHls, detectMaster, updateStreamInfo, forceVhsQuality } from '../../helper/videoplayer.ts'
+import { onMounted, onUnmounted, Ref, ref, watch } from 'vue'
+import { detectHls, detectMaster, updateStreamInfo, forceVhsQuality, setupVideoMediaSession } from '../../helper/videoplayer.ts'
 // import videojs from 'video.js'
 // videojs.log.level('debug');
 // import 'video.js/dist/video-js.css'
@@ -91,6 +92,7 @@ const props = defineProps({
     title: { type: String, required: false },
     subtracks: { type: Array as () => string[], default: () => [], required: false },
     link: { type: String, required: false },
+    movie:{type: Object, required: false}
 })
 
 const toast = useToast()
@@ -98,6 +100,8 @@ const toast = useToast()
 let player: any = null
 const videoPlayerRef = ref<HTMLVideoElement | null>(null)
 const metadata = ref({
+    name: '',
+    cover: null,
     duration: 0,
     width: 0,
     height: 0
@@ -123,7 +127,17 @@ onMounted(() => {
     isHls.value = detectHls(props.link ?? props.src)
     isMaster.value = detectMaster(props.link ?? props.src)
 
-
+    watch(
+        () => metadata.value,
+        (meta) => {
+            metadata.value.name = props.movie?.title;
+            metadata.value.cover = props.movie?.cover;
+            const video = videoPlayerRef.value
+            if (!video || !meta) return
+            setupVideoMediaSession(meta, video)
+        },
+        { immediate: true }
+    )
     player = videojs(videoPlayerRef.value, {
         autoplay: true,
         controls: true,
@@ -265,7 +279,13 @@ onUnmounted(() => {
     overflow-x: hidden;
 }
 
-.cont-w-normal {
+.cont-w-auto {
+    max-width: 1100px;
+    width: 100%;
+}
+
+.cont-w-desktop {
+    max-width: unset;
     width: 1200px;
 }
 

@@ -20,5 +20,12 @@
             ".wav",
             ".flac"
         ]
+    },
+    "Word document":{
+        "icon": "pi pi-file",
+        "extensions":[
+            ".doc",
+            ".docx"
+        ]
     }
 }

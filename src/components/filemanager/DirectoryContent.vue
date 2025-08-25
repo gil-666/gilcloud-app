@@ -3,6 +3,7 @@
     <AudioPlayer @close="audioActive = false" v-if="audioActive" :src="audioSource"></AudioPlayer>
     <ImageViewer @close="imageActive = false" v-if="imageActive" :src="imageSource"></ImageViewer>
     <VideoPlayer @close="videoActive = false" v-if="videoActive" :src="videoSource"></VideoPlayer>
+    <FileView @close="fileViewActive = false" v-if="fileViewActive" :file="fileSource"></FileView>
     <p v-if="isDirEmpty()" class="font-light">No items to show</p>
     <!-- <p class="font-light" id="load">Loading</p> -->
     <div v-if="!isDirEmpty()"
@@ -50,6 +51,7 @@ const videoSource = ref('');
 //image viewer
 import ImageViewer from "../../components/media/ImageViewer.vue";
 import { useApiUrl } from "../../main.ts";
+import FileView from "../media/FileView.vue";
 const imageActive = ref(false);
 const imageSource: FileStructure | any = ref(null)
 
@@ -57,6 +59,10 @@ const imageSource: FileStructure | any = ref(null)
 
 const audioActive = ref(false);
 const audioSource: FileStructure | any = ref('');
+
+//file preview view
+const fileSource: FileStructure | any = ref('')
+const fileViewActive = ref(false)
 
 // helpers
 function onGenerateLink(filePath: string) {
@@ -184,6 +190,11 @@ function loadAudio(filePath: FileStructure) {
   audioActive.value = true;
 }
 
+function loadFileViewer(file: FileStructure) {
+  fileSource.value = file;
+  fileViewActive.value = true;
+}
+
 function performFileAction(file: FileStructure) {
   const fileType = getFileTypeString(file.name);
   if (fileType === "video") {
@@ -193,7 +204,7 @@ function performFileAction(file: FileStructure) {
   } else if (fileType === "audio") {
     loadAudio(file);
   } else {
-    downloadFile(file.path);
+    loadFileViewer(file)
   }
 }
 // watch(

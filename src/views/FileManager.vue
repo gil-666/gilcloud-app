@@ -20,7 +20,7 @@
     <div class="border-1 border-neutral-600 m-5 relative bottom-5 p-10 overflow-y-auto h-full max-h-11/12">
       <Suspense>
         <template #default>
-          <DirectoryContent v-model:dir="currentDir" :key="currentDir" />
+          <DirectoryContent v-if="store.currentDir" v-model:dir="currentDir" :key="currentDir" />
         </template>
         <template #fallback>
           <Loader/>

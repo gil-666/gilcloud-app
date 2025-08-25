@@ -1,7 +1,7 @@
 <template>
   <div class="banner shadow-lg w-full inset-0 flex top-0 items-center h-fit justify-between px-4 py-2 z-100">
     <!-- Logo -->
-    <router-link class="flex place-items-center space-x-2" to="/">
+    <router-link class="flex place-items-center space-x-2" :to="!isLoggedIn ? '/login' : '/'">
       <img src="@/assets/logtrans.png" alt="GilCloud Logo" class="h-10" />
       <p class="text-2xl font-bold h-fit">GilCloud</p>
     </router-link>

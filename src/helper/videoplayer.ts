@@ -66,9 +66,39 @@ function forceVhsQuality(player: any, selectedQuality: string) {
         console.warn('Selected quality not found in VHS playlists');
     }
 }
+
+function setupVideoMediaSession(metadata: any, video: HTMLVideoElement) {
+    if (!('mediaSession' in navigator)) return
+
+    navigator.mediaSession.metadata = new MediaMetadata({
+        title: metadata.name || 'Unknown Title',
+        artist: 'GilCloud | Movies',
+        album: 'GilCloud | Movies',
+        artwork: [
+            {
+                src: metadata.cover || '/assets/logtrans.png',
+                sizes: '512x512',
+                type: 'image/jpg'
+            }
+        ]
+    })
+
+    // Actions for media controls
+    navigator.mediaSession.setActionHandler('play', () => video.play())
+    navigator.mediaSession.setActionHandler('pause', () => video.pause())
+    navigator.mediaSession.setActionHandler('seekbackward', (details) => {
+        video.currentTime = Math.max(video.currentTime - (details.seekOffset || 10), 0)
+    })
+    navigator.mediaSession.setActionHandler('seekforward', (details) => {
+        video.currentTime = Math.min(video.currentTime + (details.seekOffset || 10), video.duration)
+    })
+    navigator.mediaSession.setActionHandler('previoustrack', null) // optional
+    navigator.mediaSession.setActionHandler('nexttrack', null)     // optional
+}
 export {
     detectHls,
     detectMaster,
     updateStreamInfo,
     forceVhsQuality,
+    setupVideoMediaSession
 }

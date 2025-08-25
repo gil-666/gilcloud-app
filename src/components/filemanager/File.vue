@@ -2,6 +2,7 @@
 import {onBeforeUnmount, onMounted, ref} from "vue";
 import {useAppStore} from "../../stores/app.ts";
 import { getFileTypeIcon } from "../../util/fileTypes";
+import { formatTextLimit } from "../../util/textFormats.ts";
 const store = useAppStore();
 const props = defineProps({
   name: {
@@ -16,14 +17,7 @@ const props = defineProps({
 const emit = defineEmits(['delete','link-generate','link-generate-view','download']);
 const showDropdown = ref(false);
 const folderItemRef = ref<HTMLElement | null>(null);
-function formatText(text: string){
-  let limit = 30
-  if(text.length > limit){
-    return text.slice(0,limit-3)+"..."
-  }else{
-    return text;
-  }
-}
+
 function calculateSize(size:number){ //size in bytes
   const kb = 1024;
   const mb = 1048576;
@@ -74,7 +68,7 @@ onBeforeUnmount(() => {
 
 
     <i :class="getFileTypeIcon(props.name) || 'pi pi-file'" class="mt-3" style="font-size: 50px"/>
-    <p class="wrap-anywhere font-light" :title="props.name" >{{formatText(props.name)}}</p>
+    <p class="wrap-anywhere font-light" :title="props.name" >{{formatTextLimit(props.name,30)}}</p>
     <p class="size font-extralight mt-2">{{calculateSize(props.size)}}</p>
     <p class="down-label hover:opacity-100 relative opacity-0 mt-0">{{getFileTypeIcon(props.name) ? 'open' : 'download'}}</p>
   </div>
