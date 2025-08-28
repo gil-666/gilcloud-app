@@ -11,6 +11,7 @@ import Loader from "@/components/Loader.vue";
 import { useRouter } from "vue-router";
 import VideoPlayer from "./components/media/VideoPlayer.vue";
 import { useApiUrl } from "./main.ts";
+import BackgroundPlayer from "./components/media/BackgroundPlayer.vue";
 const window2 = typeof window;
 const isLoggedIn = ref(false);
 const store = useAppStore();;
@@ -168,14 +169,15 @@ async function uploadFile(file: File) {
             <Loader />
           </template>
         </Suspense>
-
+        <BackgroundPlayer />
       </div>
+      
     </div>
   </main>
 
   <UploadDialog v-if="uploadVisible" @close="uploadVisible = false; (typeof window2 as any).location.reload()"
     @file-selected="onSelectedFile" :progress="uploadProgress"></UploadDialog>
-
+  
 </template>
 
 <style scoped>

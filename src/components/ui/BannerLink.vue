@@ -3,7 +3,7 @@
     <!-- Logo -->
     <router-link class="flex place-items-center space-x-2" :to="!isLoggedIn ? '/login' : '/'">
       <img src="@/assets/logtrans.png" alt="GilCloud Logo" class="h-10" />
-      <p class="text-2xl font-bold h-fit">GilCloud</p>
+      <p class="text-2xl font-bold h-fit transition-all duration-250 opacity-100 hover:opacity-100 not-sm:opacity-0">GilCloud</p>
     </router-link>
 
     <!-- Navigation -->
