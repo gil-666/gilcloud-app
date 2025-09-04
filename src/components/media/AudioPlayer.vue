@@ -1,18 +1,18 @@
 <template>
 
-  <Loader v-if="!loaded" />
+  <Loader v-if="!loaded && visible || props.link" />
 
-  <div v-show="loaded"
+  <div v-show="loaded && visible || props.link"
     class="audio-player-container fixed inset-0 place-items-center items-center text-center justify-center z-100">
     <BannerLink v-if="!props.src" />
-    <i v-if="!props.link" class="pi pi-times fixed right-4 top-4 cursor-pointer z-100"
-      @click="$emit('close'), destroyPlayer(audioPlayerRef)" style="font-size: 30px"></i>
+    <i v-if="!props.link" class="pi pi-times fixed right-4 top-4 cursor-pointer z-100" @click.once="$emit('close')"
+      style="font-size: 30px"></i>
 
     <div :class="props.link ? 'w-full cont' : 'cont cont-w-normal'"
       class="p-5 relative items-center h-screen place-items-center">
       <div class="title mt-3 mb-2">
         <h1 v-if="!metadata?.title" class="text-3xl max-w-full break-all">
-          {{ formatTextLimit(fileName ?? props.link?.lastIndexOf('/'),30) || 'Audio' }}
+          {{ formatTextLimit(fileName ?? props.link?.lastIndexOf('/'), 30) || 'Audio' }}
         </h1>
         <h1 v-else class="text-3xl max-w-full break-all">
           {{ metadata.title }}
@@ -85,6 +85,7 @@
 <script setup lang="ts">
 import { useHead } from '@unhead/vue'
 import { useRoute } from 'vue-router';
+import { backgroundPlayerStore } from '../../stores/background-player';
 const metadata = ref<any>(null);
 const fileName = ref('')
 const route = useRoute()
@@ -132,38 +133,33 @@ import { albumArtOnPause, albumArtOnPlay, applyGlow, handleMouseMove, resetTrans
 import Loader from '../Loader.vue';
 import { readTrackTags, setupMediaSession } from '../../helper/audioplayer';
 import { generateLink } from '../../util/linkGen';
-import { format } from 'path';
+import { formatTime } from '../../util/textFormats';
 import BannerLink from '../ui/BannerLink.vue';
 import { useApiUrl } from '../../main';
 import { formatTextLimit } from '../../util/textFormats';
+import { storeToRefs } from 'pinia';
+const { isPlaying, playbackPosition } = storeToRefs(backgroundPlayerStore());
 
 const loaded = ref(false);
 const emit = defineEmits<{ (e: 'close'): void }>()
-const props = defineProps({
-  src: { type: Object, required: false },
-  link: { type: String, required: false },
-});
+const props = defineProps<{
+  src?: string | any
+  link?: string
+  visible?: boolean
+}>()
 
 const audioPlayerRef = ref<HTMLAudioElement | null>(null);
 
 const albumArtRef = ref<HTMLImageElement | null>(null);
 const albumArtImg: Ref<string | null> = ref(null);
-const isPlaying = ref(false);
+// const isPlaying = ref(false);
 const currentTime = ref(0);
 
 const duration = ref(0);
 const audioFormat = ref('')
 const sliderTime = ref(0);
 let rafId: number | null = null;
-const formatTime = (time: number) => {
-  const minutes = Math.floor(time / 60)
-    .toString()
-    .padStart(2, "0");
-  const seconds = Math.floor(time % 60)
-    .toString()
-    .padStart(2, "0");
-  return `${minutes}:${seconds}`;
-};
+
 const togglePlay = () => {
   const audio = audioPlayerRef.value;
   if (!audio) return;
@@ -172,7 +168,7 @@ const togglePlay = () => {
     audio.play()
       .then(() => {
         // Successfully started playback
-        isPlaying.value = true;
+        backgroundPlayerStore().play();
         updateProgress();
         albumArtOnPlay(albumArtRef.value);
       })
@@ -180,14 +176,14 @@ const togglePlay = () => {
         console.warn('Autoplay blocked until user interaction', err);
         // Ensure player is paused and UI reflects that
         audio.pause();
-        isPlaying.value = false;
+        backgroundPlayerStore().stop()
         albumArtOnPause(albumArtRef.value);
         if (rafId) cancelAnimationFrame(rafId);
       });
   } else {
     // Pause logic
     audio.pause();
-    isPlaying.value = false;
+    backgroundPlayerStore().pause()
     albumArtOnPause(albumArtRef.value);
     if (rafId) cancelAnimationFrame(rafId);
   }
@@ -199,13 +195,13 @@ const playAudio = async () => {
 
   try {
     await audio.play();
-    isPlaying.value = true;
+    backgroundPlayerStore().play();
     albumArtOnPlay(albumArtRef.value);
     updateProgress();
   } catch (err) {
     console.warn("Autoplay blocked, paused instead", err);
     audio.pause();
-    isPlaying.value = false;
+    backgroundPlayerStore().pause();
     albumArtOnPause(albumArtRef.value);
   }
 };
@@ -216,7 +212,7 @@ const tryPlayWithRetry = async (retries = 2) => {
 
   try {
     await audio.play();
-    isPlaying.value = true;
+    backgroundPlayerStore().play();
     albumArtOnPlay(albumArtRef.value);
     updateProgress();
   } catch {
@@ -231,7 +227,7 @@ const tryPlayWithRetry = async (retries = 2) => {
 const updateProgress = () => {
   if (!audioPlayerRef.value) return
   currentTime.value = audioPlayerRef.value.currentTime
-
+  backgroundPlayerStore().playbackPosition = currentTime.value;
   // Update MediaSession position for OS notifications
   if ('setPositionState' in navigator.mediaSession) {
     try {
@@ -253,7 +249,7 @@ function destroyPlayer(audio: HTMLAudioElement | null) {
   audio.src = ''
 }
 
-// seek audio
+// seek audio - local player only
 function onSliderInput(e: Event) {
   sliderTime.value = Number((e.target as HTMLInputElement).value);
   currentTime.value = sliderTime.value;
@@ -267,6 +263,7 @@ function onSliderChange(e: Event) {
 onServerPrefetch(async () => {
   const link = route.query.link as string
   if (link) {
+    
     const res = await fetch(
       `${useApiUrl()}/music_metadata?file=${encodeURIComponent(link)}`
     )
@@ -281,6 +278,14 @@ async function loadMetadata() {
   if (!source) return
   const meta = await readTrackTags(String(source))
   if (!meta) return
+  backgroundPlayerStore().setTrack({
+    title: meta.title || fileName.value,
+    artist: meta.artist || 'Unknown Artist',
+    album: meta.album || '',
+    duration: duration.value,
+    picture: meta.picture ?? null,
+    src: source ?? ''
+  })
   metadata.value = meta
   if (albumArtRef.value && meta.picture) {
     albumArtRef.value.onload = async () => {
@@ -295,7 +300,6 @@ onMounted(() => {
   const audio = audioPlayerRef.value;
   if (!audio) return;
   let lastSrc: string | null = null;
-
   watch(
     () => props.src?.path ? generateLink(props.src?.path) : props.link,
     async (newSrc) => {
@@ -313,12 +317,12 @@ onMounted(() => {
         try {
           // Try to play automatically
           await audio.play();
-          isPlaying.value = true;
+          backgroundPlayerStore
           albumArtOnPlay(albumArtRef.value);
           updateProgress();
         } catch (err) {
           console.warn("Autoplay blocked, user interaction needed", err);
-          isPlaying.value = false;
+          backgroundPlayerStore().stop();
           albumArtOnPause(albumArtRef.value);
         }
       }
@@ -337,6 +341,18 @@ onMounted(() => {
     },
     { immediate: true }
   )
+  watch(isPlaying, (playing) => {
+    const audio = audioPlayerRef.value
+    if (!audio) return
+    if (playing) audio.play()
+    else audio.pause()
+  })
+  watch(playbackPosition, (pos) => {
+    const audio = audioPlayerRef.value
+    if (audio && Math.abs(audio.currentTime - pos) > 0.5) {
+      audio.currentTime = pos
+    }
+  })
   audio.onloadedmetadata = async () => {
     // togglePlay()
     loaded.value = true;
@@ -356,7 +372,7 @@ onMounted(() => {
   };
 
   audio.onended = () => {
-    isPlaying.value = false;
+    backgroundPlayerStore().stop();
     currentTime.value = 0;
     albumArtOnPause(albumArtRef.value);
   };
@@ -367,11 +383,11 @@ onMounted(() => {
 
   audio.onpause = () => { //if paused externally
     albumArtOnPause(albumArtRef.value)
-    isPlaying.value = false;
+    backgroundPlayerStore().pause();
   }
   audio.onplay = () => { //if played externally
     albumArtOnPlay(albumArtRef.value)
-    isPlaying.value = true;
+    backgroundPlayerStore().play();
   }
 });
 

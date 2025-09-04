@@ -168,8 +168,8 @@ async function uploadFile(file: File) {
             <Loader />
           </template>
         </Suspense>
-
       </div>
+      
     </div>
   </main>
 

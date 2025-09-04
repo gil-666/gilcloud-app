@@ -1,6 +1,6 @@
 <template>
   <div>
-    <AudioPlayer @close="audioActive = false" v-if="audioActive" :src="audioSource"></AudioPlayer>
+    <AudioPlayer @close="audioActive = false" :visible="audioActive" :src="audioSource"></AudioPlayer>
     <ImageViewer @close="imageActive = false" v-if="imageActive" :src="imageSource"></ImageViewer>
     <VideoPlayer @close="videoActive = false" v-if="videoActive" :src="videoSource"></VideoPlayer>
     <FileView @close="fileViewActive = false" v-if="fileViewActive" :file="fileSource"></FileView>
@@ -21,7 +21,7 @@
 
 <script setup lang="ts">
 
-import { ref, defineEmits } from "vue";
+import { ref, defineEmits, KeepAlive, Teleport } from "vue";
 import axios from "axios";
 import Folder from "../../components/filemanager/Folder.vue";
 import File from "../../components/filemanager/File.vue";
@@ -58,8 +58,8 @@ const imageSource: FileStructure | any = ref(null)
 //audio player
 
 const audioActive = ref(false);
-const audioSource: FileStructure | any = ref('');
-
+const audioSource = ref<FileStructure | null>(null)
+const audioPlayerShow = ref(false);
 //file preview view
 const fileSource: FileStructure | any = ref('')
 const fileViewActive = ref(false)
@@ -188,6 +188,7 @@ function loadImage(file: FileStructure) {
 function loadAudio(filePath: FileStructure) {
   audioSource.value = filePath;
   audioActive.value = true;
+  audioPlayerShow.value = true;
 }
 
 function loadFileViewer(file: FileStructure) {
